@@ -277,17 +277,24 @@
             onEachFeature: pop_gridlayer_mca_fitness_1,
             style: style_gridlayer_mca_fitness_1_0,
 		function updateScores() {
-  var w1 = parseFloat(document.getElementById('slider1').value);
-  var w2 = parseFloat(document.getElementById('slider2').value);
-  var w3 = parseFloat(document.getElementById('slider3').value);
+  // De juiste slider IDs gebruiken:
+  var w_ov = parseFloat(document.getElementById('weight-ov').value);
+  var w_fitness = parseFloat(document.getElementById('weight-fitness').value);
+  var w_pop = parseFloat(document.getElementById('weight-pop').value);
+  var w_buildings = parseFloat(document.getElementById('weight-buildings').value);
 
   layer_gridlayer_mca_fitness_1.eachLayer(function(layer) {
     var props = layer.feature.properties;
-    var pop = parseFloat(props.score_pop) || 0;
-    var fit = parseFloat(props.score_fit) || 0;
-    var bus = parseFloat(props.score_bus) || 0;
 
-    props.MCA_score = w1 * score_pop + w2 * score_fit + w3 * score_bus;
+    var ov = parseFloat(props.score_ov) || 0;          // Check juiste property namen
+    var fitness = parseFloat(props.score_fit) || 0;
+    var pop = parseFloat(props.score_pop) || 0;
+    var buildings = parseFloat(props.score_buildings) || 0;
+
+    // Nieuwe MCA score berekenen met 4 factoren:
+    props.MCA_score = w_ov * ov + w_fitness * fitness + w_pop * pop + w_buildings * buildings;
+
+    // Update de stijl:
     layer.setStyle(style_gridlayer_mca_fitness_1_0(layer.feature));
   });
 }
