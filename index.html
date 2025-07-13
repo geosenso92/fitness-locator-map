@@ -340,6 +340,47 @@
         bounds_group.addLayer(layer_fitness_030_2);
         map.addLayer(layer_fitness_030_2);
         setBounds();
+		function getWeights() {
+  return {
+    ov: parseFloat(document.getElementById('weight-ov').value),
+    fitness: parseFloat(document.getElementById('weight-fitness').value),
+    pop: parseFloat(document.getElementById('weight-pop').value),
+    buildings: parseFloat(document.getElementById('weight-buildings').value),
+  };
+}
+
+function updateMCA() {
+  const weights = getWeights();
+
+  layer_gridlayer_mca_fitness_1.eachLayer(layer => {
+    const props = layer.feature.properties;
+
+    // Vervang OV, FIT, POP, BLD door je daadwerkelijke veldnamen in je shapefile
+    const score =
+      (props.OV || 0) * weights.score_bus +
+      (props.FIT || 0) * weights.score_fit +
+      (props.POP || 0) * weights.score_pop +
+      (props.BLD || 0) * weights.aantal_geb;
+
+    props.MCA_score = score;
+
+    layer.setStyle({
+      fillColor: getColor(score),
+      fillOpacity: 0.7,
+      color: '#333',
+      weight: 1
+    });
+
+    layer.bindPopup(`<b>MCA_score:</b> ${score.toFixed(2)}`);
+  });
+}
+
+function getColor(score) {
+  return score > 6 ? '#1a9641' :
+         score > 4 ? '#a6d96a' :
+         score > 2 ? '#fdae61' :
+                     '#d7191c';
+}
         </script>
     </body>
 </html>
