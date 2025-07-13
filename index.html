@@ -276,7 +276,40 @@
             pane: 'pane_gridlayer_mca_fitness_1',
             onEachFeature: pop_gridlayer_mca_fitness_1,
             style: style_gridlayer_mca_fitness_1_0,
+		function updateScores() {
+  var w1 = parseFloat(document.getElementById('slider1').value);
+  var w2 = parseFloat(document.getElementById('slider2').value);
+  var w3 = parseFloat(document.getElementById('slider3').value);
+
+  layer_gridlayer_mca_fitness_1.eachLayer(function(layer) {
+    var props = layer.feature.properties;
+    var pop = parseFloat(props.score_pop) || 0;
+    var fit = parseFloat(props.score_fit) || 0;
+    var bus = parseFloat(props.score_bus) || 0;
+
+    props.MCA_score = w1 * score_pop + w2 * score_fit + w3 * score_bus;
+    layer.setStyle(style_gridlayer_mca_fitness_1_0(layer.feature));
+  });
+}
+
+// Event listeners sliders (ook hier toevoegen)
+document.getElementById('slider1').addEventListener('input', function() {
+  document.getElementById('val1').textContent = this.value;
+  updateScores();
+});
+document.getElementById('slider2').addEventListener('input', function() {
+  document.getElementById('val2').textContent = this.value;
+  updateScores();
+});
+document.getElementById('slider3').addEventListener('input', function() {
+  document.getElementById('val3').textContent = this.value;
+  updateScores();
+});
+
+// Initialiseer de scores gelijk bij laden
+updateScores();
         });
+		
         bounds_group.addLayer(layer_gridlayer_mca_fitness_1);
         map.addLayer(layer_gridlayer_mca_fitness_1);
         function pop_fitness_030_2(feature, layer) {
