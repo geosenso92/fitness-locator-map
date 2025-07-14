@@ -1,256 +1,289 @@
 <!doctype html>
-<html lang="nl">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width" />
   <link rel="stylesheet" href="css/leaflet.css" />
   <style>
     html, body, #map {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
+      width: 100%; height: 100%; margin: 0; padding: 0;
     }
-    .title-box {
-      position: absolute;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255,255,255,0.95);
-      padding: 10px 20px;
-      border-radius: 8px;
+    body {
       font-family: sans-serif;
+    }
+    #map {
+      position: absolute;
+      top: 80px; /* ruimte voor header en logo */
+      bottom: 0; left: 0; right: 0;
+      background: #eee;
+    }
+    header {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 50px;
+      background: #333;
+      color: white;
+      line-height: 50px;
       font-size: 20px;
       font-weight: bold;
+      text-align: center;
       z-index: 1001;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    }
-    .control-box {
-      position: absolute;
-      top: 80px;
-      left: 10px;
-      background: rgba(255,255,255,0.95);
-      padding: 12px;
-      border-radius: 8px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.3);
-      z-index: 1000;
-      font-family: sans-serif;
-      font-size: 14px;
-      max-width: 250px;
-    }
-    .control-box label {
-      display: block;
-      margin-bottom: 8px;
     }
     #logo {
       position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 1002;
+      top: 50px; left: 10px;
+      height: 60px;
+      z-index: 1100;
     }
-    #logo img {
-      height: 45px;
-      opacity: 0.9;
-    }
-    #info-icon {
-      background: #333;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 18px;
-      height: 18px;
-      font-size: 12px;
-      cursor: pointer;
-      margin-left: 8px;
-    }
-    #info-box {
-      display: none;
-      background: #333;
-      color: white;
-      padding: 8px;
-      font-size: 12px;
-      border-radius: 5px;
+    .control-box {
       position: absolute;
-      bottom: 10px;
-      left: 10px;
-      max-width: 220px;
-      z-index: 1003;
-    }
-    .legend {
-      position: absolute;
-      bottom: 20px;
-      left: 10px;
-      background: white;
-      padding: 10px;
-      font-family: sans-serif;
-      font-size: 13px;
+      top: 60px;
+      left: 100px;
+      background: rgba(255,255,255,0.95);
+      padding: 15px 20px 30px 20px;
       border-radius: 8px;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
       z-index: 1000;
+      width: 270px;
+      font-size: 14px;
+    }
+    .control-box label {
+      display: block;
+      margin-bottom: 10px;
+    }
+    .control-box input[type=range] {
+      width: 100%;
+    }
+    #reset-btn {
+      margin-top: 10px;
+      width: 100%;
+      padding: 8px;
+      font-size: 14px;
+      background: #333;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #update-btn {
+      position: relative;
+      padding-right: 25px;
+    }
+    #info-icon {
+      position: absolute;
+      top: 50%;
+      right: 5px;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: black;
+      color: white;
+      font-weight: bold;
+      text-align: center;
+      line-height: 18px;
+      font-size: 14px;
+      cursor: pointer;
+      user-select: none;
+    }
+    #info-text {
+      position: absolute;
+      top: -40px;
+      right: 25px;
+      width: 250px;
+      background: white;
+      border: 1px solid #ccc;
+      padding: 8px;
+      font-size: 12px;
+      border-radius: 4px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+      display: none;
+      z-index: 1050;
+      pointer-events: auto;
+    }
+
+    /* Legenda */
+    .legend {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      padding: 10px;
+      background: white;
+      font-size: 13px;
+      border-radius: 6px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      z-index: 1000;
+      width: 200px;
+      line-height: 18px;
     }
     .legend-title {
       font-weight: bold;
-      margin-bottom: 4px;
+      margin-bottom: 8px;
+      text-align: center;
     }
     .legend-scale {
       display: flex;
-      height: 12px;
-      margin-top: 5px;
+      height: 20px;
+      margin-bottom: 5px;
+      border-radius: 4px;
+      overflow: hidden;
     }
     .legend-scale div {
       flex: 1;
     }
-    .control-buttons {
-      margin-top: 8px;
-    }
-    .control-buttons button {
-      margin-right: 6px;
-      margin-top: 6px;
+    .legend-labels {
+      display: flex;
+      justify-content: space-between;
     }
   </style>
-  <title>GeoSenso: Locatievinder voor Fitnesscentra</title>
+  <title>GeoSenso: Locatievinder Fitness Center</title>
 </head>
 <body>
-  <div id="map"></div>
 
-  <div id="logo">
-    <img src="data/NewLogo21.png" alt="Logo" />
+<header>GeoSenso: Locatievinder Fitness Center</header>
+
+<img id="logo" src="data/NewLogo21.png" alt="Logo" />
+
+<div class="control-box">
+  <label>Nabijgelegen fitnesscentra:
+    <input type="range" min="0" max="1" step="0.1" id="weight-fitness" value="0.30" />
+  </label>
+  <label>OV bereikbaarheid:
+    <input type="range" min="0" max="1" step="0.1" id="weight-ov" value="0.20" />
+  </label>
+  <label>Bevolkingsdichtheid:
+    <input type="range" min="0" max="1" step="0.1" id="weight-pop" value="0.50" />
+  </label>
+  <button id="update-btn">Update suitability index
+    <div id="info-icon">i</div>
+  </button>
+  <div id="info-text">De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.</div>
+  <button id="reset-btn">Reset</button>
+</div>
+
+<div id="map"></div>
+
+<div class="legend">
+  <div class="legend-title">Suitability index</div>
+  <div class="legend-scale">
+    <div style="background:#d7191c"></div>
+    <div style="background:#fdae61"></div>
+    <div style="background:#a6d96a"></div>
+    <div style="background:#1a9641"></div>
   </div>
-
-  <div class="title-box">GeoSenso: Locatievinder voor Fitnesscentra</div>
-
-  <div class="control-box">
-    <label>OV bereikbaarheid:
-      <input type="range" min="0" max="1" step="0.1" id="weight-ov" value="0.2" />
-    </label>
-    <label>Nabijgelegen fitnesscentra:
-      <input type="range" min="0" max="1" step="0.1" id="weight-fitness" value="0.3" />
-    </label>
-    <label>Bevolkingsdichtheid:
-      <input type="range" min="0" max="1" step="0.1" id="weight-pop" value="0.5" />
-    </label>
-    <div class="control-buttons">
-      <button onclick="updateScores()">Update suitability index</button>
-      <button id="info-icon">i</button>
-      <button onclick="resetSliders()">Reset</button>
-    </div>
+  <div class="legend-labels">
+    <span>1</span><span>3</span><span>6</span><span>10</span>
   </div>
+</div>
 
-  <div id="info-box">
-    De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.
-  </div>
-
-  <div class="legend">
-    <div class="legend-title">Suitability index</div>
-    <div class="legend-scale">
-      <div style="background:#d7191c"></div>
-      <div style="background:#fdae61"></div>
-      <div style="background:#a6d96a"></div>
-      <div style="background:#1a9641"></div>
-    </div>
-    <div style="display: flex; justify-content: space-between;">
-      <span>0</span><span>10</span>
-    </div>
-  </div>
-
-  <script src="js/leaflet.js"></script>
-  <script>
-    // Grenzen rond Utrecht (even voorbeeld, pas aan naar jouw gewenste gebied)
-    var southWest = L.latLng(51.7, 4.8);
-    var northEast = L.latLng(52.4, 5.6);
-    var bounds = L.latLngBounds(southWest, northEast);
-
-    var map = L.map('map', {
-      minZoom: 7,
-      maxZoom: 18,
-      maxBounds: bounds,
-      maxBoundsViscosity: 0.5,
-      zoomControl: false
-    }).setView([52.09, 5.12], 12);
-
-    map.zoomControl.setPosition('topright');
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-
-    L.control.scale({ position: 'bottomright' }).addTo(map);
-
-    function highlightFeature(e) {
-      var layer = e.target;
-      layer.setStyle({ weight: 2, color: '#666' });
+<script src="js/leaflet.js"></script>
+<script>
+  // Info icoon klik toggelen
+  const infoIcon = document.getElementById('info-icon');
+  const infoText = document.getElementById('info-text');
+  infoIcon.addEventListener('click', () => {
+    infoText.style.display = infoText.style.display === 'block' ? 'none' : 'block';
+  });
+  // Sluit info als ergens anders geklikt wordt
+  document.addEventListener('click', e => {
+    if (!infoIcon.contains(e.target) && !infoText.contains(e.target)) {
+      infoText.style.display = 'none';
     }
-    function resetHighlight(e) {
-      layer_group.resetStyle(e.target);
-    }
-    function popFeature(feature, layer) {
-      layer.on({ mouseover: highlightFeature, mouseout: resetHighlight });
-      layer.bindPopup('Suitability index: ' + (feature.properties.MCA_score || 0).toFixed(2));
-    }
+  });
 
-    function getColor(score) {
-      return score > 7 ? '#1a9641' :
-             score > 4 ? '#a6d96a' :
-             score > 2 ? '#fdae61' :
-                         '#d7191c';
-    }
-    function styleFeature(feature) {
-      return {
-        fillColor: getColor(feature.properties.MCA_score || 0),
-        weight: 1,
-        color: '#333',
-        fillOpacity: 0.7
-      };
-    }
+  // Kaart initialiseren
+  var map = L.map('map', {
+    zoomControl: false,
+    minZoom: 10,
+    maxZoom: 14,
+    maxBounds: [[51.5, 4.5], [53.5, 7.0]]  // bijv Utrecht en omstreken + iets meer
+  }).setView([52.09, 5.12], 12);
 
-    let layer_group;
+  // Zoom control rechtsboven
+  L.control.zoom({ position: 'topright' }).addTo(map);
 
-    fetch('data/gridlayer_mca_fitness.geojson')
-      .then(res => res.json())
-      .then(data => {
-        layer_group = L.geoJson(data, {
-          style: styleFeature,
-          onEachFeature: popFeature
-        }).addTo(map);
-        updateScores();
-      })
-      .catch(err => console.error('Fout bij laden GeoJSON:', err));
+  // Schaalbalk rechtsonder
+  L.control.scale({ position: 'bottomright' }).addTo(map);
 
-    function updateScores() {
-      const w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
-      const w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
-      const w_pop = parseFloat(document.getElementById('weight-pop').value) || 0;
+  // Basemap toevoegen
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
 
-      layer_group.eachLayer(function(layer) {
-        const p = layer.feature.properties;
-        const ov = parseFloat(p.score_bus) || 0;
-        const fit = parseFloat(p.score_fit) || 0;
-        const pop = parseFloat(p.score_pop) || 0;
-        p.MCA_score = w_ov * ov + w_fit * fit + w_pop * pop;
+  // Kleurenfunctie
+  function getColor(score) {
+    return score > 6 ? '#1a9641' :
+           score > 4 ? '#a6d96a' :
+           score > 2 ? '#fdae61' :
+                       '#d7191c';
+  }
 
-        layer.setStyle(styleFeature(layer.feature));
-        layer.bindPopup('Suitability index: ' + p.MCA_score.toFixed(2));
-      });
-    }
+  function styleFeature(feature) {
+    return {
+      fillColor: getColor(feature.properties.MCA_score || 0),
+      weight: 1,
+      color: '#333',
+      fillOpacity: 0.7
+    };
+  }
 
-    // Event listeners sliders
-    ['weight-ov','weight-fitness','weight-pop'].forEach(id =>
-      document.getElementById(id).addEventListener('input', updateScores)
-    );
+  function highlightFeature(e) {
+    var layer = e.target;
+    layer.setStyle({ weight: 2, color: '#666' });
+  }
+  function resetHighlight(e) {
+    layer_group.resetStyle(e.target);
+  }
+  function popFeature(feature, layer) {
+    layer.on({
+      mouseover: highlightFeature,
+      mouseout: resetHighlight
+    });
+    layer.bindPopup('Suitability index: ' + ((feature.properties.MCA_score || 0).toFixed(2)));
+  }
 
-    // Info-tekst toggle
-    document.getElementById('info-icon').addEventListener('click', () => {
-      const box = document.getElementById('info-box');
-      box.style.display = box.style.display === 'block' ? 'none' : 'block';
+  var layer_group; // globale variabele voor geojson layer
+
+  // GeoJSON inladen via fetch (pas het pad aan als nodig!)
+  fetch('data/gridlayer_mca_fitness.geojson')
+    .then(res => res.json())
+    .then(data => {
+      layer_group = L.geoJSON(data, {
+        style: styleFeature,
+        onEachFeature: popFeature
+      }).addTo(map);
+      updateScores(); // initialiseren scores
+    })
+    .catch(e => {
+      alert("Fout bij het laden van GeoJSON: " + e);
     });
 
-    // Reset-functie sliders met waarden 20%, 30%, 50%
-    function resetSliders() {
-      document.getElementById('weight-ov').value = 0.2;
-      document.getElementById('weight-fitness').value = 0.3;
-      document.getElementById('weight-pop').value = 0.5;
-      updateScores();
-    }
-  </script>
+  function updateScores() {
+    var w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
+    var w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
+    var w_pop = parseFloat(document.getElementById('weight-pop').value) || 0;
+
+    layer_group.eachLayer(function(layer) {
+      var p = layer.feature.properties;
+      var ov = parseFloat(p.score_bus) || 0;
+      var fit = parseFloat(p.score_fit) || 0;
+      var pop = parseFloat(p.score_pop) || 0;
+      p.MCA_score = w_ov * ov + w_fit * fit + w_pop * pop;
+
+      layer.setStyle(styleFeature(layer.feature));
+      layer.bindPopup('Suitability index: ' + p.MCA_score.toFixed(2));
+    });
+  }
+
+  document.getElementById('update-btn').addEventListener('click', updateScores);
+
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    document.getElementById('weight-ov').value = 0.20;
+    document.getElementById('weight-fitness').value = 0.30;
+    document.getElementById('weight-pop').value = 0.50;
+    updateScores();
+  });
+</script>
+
 </body>
 </html>
