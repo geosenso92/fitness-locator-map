@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="nl">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width" />
@@ -13,7 +13,7 @@
     }
     #map {
       position: absolute;
-      top: 80px; /* ruimte voor header en logo */
+      top: 115px; /* ruimte voor header + logo + kleine marge */
       bottom: 0; left: 0; right: 0;
       background: #eee;
     }
@@ -28,42 +28,49 @@
       font-weight: bold;
       text-align: center;
       z-index: 1001;
+      user-select: none;
     }
     #logo {
       position: absolute;
-      top: 50px; left: 10px;
+      top: 50px; 
+      left: 10px;
       height: 60px;
       z-index: 1100;
+      user-select: none;
     }
     .control-box {
       position: absolute;
-      top: 60px;
-      left: 100px;
+      top: 115px; /* net onder het logo */
+      left: 10px;
       background: rgba(255,255,255,0.95);
-      padding: 15px 20px 30px 20px;
+      padding: 12px 15px 20px 15px;
       border-radius: 8px;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
       z-index: 1000;
-      width: 270px;
-      font-size: 14px;
+      width: 250px;
+      font-size: 13px;
+      user-select: none;
     }
     .control-box label {
       display: block;
       margin-bottom: 10px;
+      cursor: pointer;
     }
     .control-box input[type=range] {
       width: 100%;
+      cursor: pointer;
     }
-    #reset-btn {
-      margin-top: 10px;
+    #reset-btn, #update-btn {
+      margin-top: 8px;
       width: 100%;
-      padding: 8px;
+      padding: 7px;
       font-size: 14px;
       background: #333;
       color: white;
       border: none;
       border-radius: 4px;
       cursor: pointer;
+      user-select: none;
     }
     #update-btn {
       position: relative;
@@ -82,24 +89,25 @@
       font-weight: bold;
       text-align: center;
       line-height: 18px;
-      font-size: 14px;
+      font-size: 12px; /* iets kleiner lettertype */
       cursor: pointer;
       user-select: none;
     }
     #info-text {
       position: absolute;
-      top: -40px;
+      top: -42px;
       right: 25px;
-      width: 250px;
+      width: 230px;
       background: white;
       border: 1px solid #ccc;
-      padding: 8px;
-      font-size: 12px;
+      padding: 7px 8px;
+      font-size: 11px; /* kleiner lettertype */
       border-radius: 4px;
       box-shadow: 0 0 5px rgba(0,0,0,0.2);
       display: none;
       z-index: 1050;
       pointer-events: auto;
+      user-select: none;
     }
 
     /* Legenda */
@@ -107,24 +115,25 @@
       position: absolute;
       bottom: 10px;
       left: 10px;
-      padding: 10px;
+      padding: 8px 12px;
       background: white;
-      font-size: 13px;
+      font-size: 12px;
       border-radius: 6px;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
       z-index: 1000;
-      width: 200px;
+      width: 180px;
       line-height: 18px;
+      user-select: none;
     }
     .legend-title {
       font-weight: bold;
-      margin-bottom: 8px;
+      margin-bottom: 7px;
       text-align: center;
     }
     .legend-scale {
       display: flex;
-      height: 20px;
-      margin-bottom: 5px;
+      height: 16px;
+      margin-bottom: 4px;
       border-radius: 4px;
       overflow: hidden;
     }
@@ -135,6 +144,7 @@
       display: flex;
       justify-content: space-between;
     }
+
   </style>
   <title>GeoSenso: Locatievinder Fitness Center</title>
 </head>
@@ -145,20 +155,20 @@
 <img id="logo" src="data/NewLogo21.png" alt="Logo" />
 
 <div class="control-box">
-  <label>Nabijgelegen fitnesscentra:
+  <label for="weight-fitness">Nabijgelegen fitnesscentra:
     <input type="range" min="0" max="1" step="0.1" id="weight-fitness" value="0.30" />
   </label>
-  <label>OV bereikbaarheid:
+  <label for="weight-ov">OV bereikbaarheid:
     <input type="range" min="0" max="1" step="0.1" id="weight-ov" value="0.20" />
   </label>
-  <label>Bevolkingsdichtheid:
+  <label for="weight-pop">Bevolkingsdichtheid:
     <input type="range" min="0" max="1" step="0.1" id="weight-pop" value="0.50" />
   </label>
-  <button id="update-btn">Update suitability index
+  <button id="update-btn" type="button">Update suitability index
     <div id="info-icon">i</div>
   </button>
   <div id="info-text">De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.</div>
-  <button id="reset-btn">Reset</button>
+  <button id="reset-btn" type="button">Reset</button>
 </div>
 
 <div id="map"></div>
@@ -191,21 +201,24 @@
     }
   });
 
-  // Kaart initialiseren
+  // Init kaart met Utrecht en zoomlimieten passend op gebied
   var map = L.map('map', {
     zoomControl: false,
-    minZoom: 10,
+    minZoom: 11,
     maxZoom: 14,
-    maxBounds: [[51.5, 4.5], [53.5, 7.0]]  // bijv Utrecht en omstreken + iets meer
+    maxBounds: [
+      [51.90, 4.95], // zuidwest Utrecht omgeving
+      [52.15, 5.35]  // noordoost Utrecht omgeving
+    ]
   }).setView([52.09, 5.12], 12);
 
   // Zoom control rechtsboven
   L.control.zoom({ position: 'topright' }).addTo(map);
 
-  // Schaalbalk rechtsonder
+  // Schaalbalk rechtsonder zichtbaar
   L.control.scale({ position: 'bottomright' }).addTo(map);
 
-  // Basemap toevoegen
+  // OpenStreetMap basemap
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
@@ -242,9 +255,9 @@
     layer.bindPopup('Suitability index: ' + ((feature.properties.MCA_score || 0).toFixed(2)));
   }
 
-  var layer_group; // globale variabele voor geojson layer
+  var layer_group;
 
-  // GeoJSON inladen via fetch (pas het pad aan als nodig!)
+  // GeoJSON inladen via fetch
   fetch('data/gridlayer_mca_fitness.geojson')
     .then(res => res.json())
     .then(data => {
@@ -252,7 +265,7 @@
         style: styleFeature,
         onEachFeature: popFeature
       }).addTo(map);
-      updateScores(); // initialiseren scores
+      updateScores(); // init scores
     })
     .catch(e => {
       alert("Fout bij het laden van GeoJSON: " + e);
@@ -283,6 +296,7 @@
     document.getElementById('weight-pop').value = 0.50;
     updateScores();
   });
+
 </script>
 
 </body>
