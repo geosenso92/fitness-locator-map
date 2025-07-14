@@ -337,6 +337,7 @@
   fetch('data/gridlayer_mca_fitness.geojson')
     .then(res => res.json())
     .then(data => {
+      console.log('Eerste feature properties:', data.features[0].properties);
       layer_group = L.geoJSON(data, {
         style: styleFeature,
         onEachFeature: popFeature
