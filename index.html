@@ -100,6 +100,13 @@
     .legend-scale div {
       flex: 1;
     }
+    .control-buttons {
+      margin-top: 8px;
+    }
+    .control-buttons button {
+      margin-right: 6px;
+      margin-top: 6px;
+    }
   </style>
   <title>GeoSenso: Locatievinder voor Fitnesscentra</title>
 </head>
@@ -114,16 +121,19 @@
 
   <div class="control-box">
     <label>OV bereikbaarheid:
-      <input type="range" min="0" max="1" step="0.1" id="weight-ov" value="0.33">
+      <input type="range" min="0" max="1" step="0.1" id="weight-ov" value="0.2">
     </label>
     <label>Nabijgelegen fitnesscentra:
-      <input type="range" min="0" max="1" step="0.1" id="weight-fitness" value="0.33">
+      <input type="range" min="0" max="1" step="0.1" id="weight-fitness" value="0.3">
     </label>
     <label>Bevolkingsdichtheid:
-      <input type="range" min="0" max="1" step="0.1" id="weight-pop" value="0.33">
+      <input type="range" min="0" max="1" step="0.1" id="weight-pop" value="0.5">
     </label>
-    <button onclick="updateScores()">Update suitability index</button>
-    <button id="info-icon">i</button>
+    <div class="control-buttons">
+      <button onclick="updateScores()">Update suitability index</button>
+      <button id="info-icon">i</button>
+      <button onclick="resetSliders()">Reset</button>
+    </div>
   </div>
 
   <div id="info-box">De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.</div>
@@ -144,14 +154,13 @@
   <script src="js/leaflet.js"></script>
   <script>
     var map = L.map('map').setView([52.09, 5.12], 12);
-
-    // Zet zoomcontrols naar rechtsboven
     map.zoomControl.setPosition('topright');
 
-    // Voeg de tile layer toe
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
+
+    L.control.scale({ position: 'bottomright' }).addTo(map);
 
     function highlightFeature(e) {
       var layer = e.target;
@@ -194,15 +203,15 @@
       .catch(err => console.error('Fout bij laden GeoJSON:', err));
 
     function updateScores() {
-      var w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
-      var w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
-      var w_pop = parseFloat(document.getElementById('weight-pop').value) || 0;
+      const w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
+      const w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
+      const w_pop = parseFloat(document.getElementById('weight-pop').value) || 0;
 
       layer_group.eachLayer(function(layer) {
-        var p = layer.feature.properties;
-        var ov = parseFloat(p.score_bus) || 0;
-        var fit = parseFloat(p.score_fit) || 0;
-        var pop = parseFloat(p.score_pop) || 0;
+        const p = layer.feature.properties;
+        const ov = parseFloat(p.score_bus) || 0;
+        const fit = parseFloat(p.score_fit) || 0;
+        const pop = parseFloat(p.score_pop) || 0;
         p.MCA_score = w_ov * ov + w_fit * fit + w_pop * pop;
 
         layer.setStyle(styleFeature(layer.feature));
@@ -210,14 +219,24 @@
       });
     }
 
+    // Event listeners sliders
     ['weight-ov','weight-fitness','weight-pop'].forEach(id =>
       document.getElementById(id).addEventListener('input', updateScores)
     );
 
+    // Info-tekst toggle
     document.getElementById('info-icon').addEventListener('click', () => {
       const box = document.getElementById('info-box');
       box.style.display = box.style.display === 'block' ? 'none' : 'block';
     });
+
+    // Reset-functie sliders met nieuwe waarden 20%, 30%, 50%
+    function resetSliders() {
+      document.getElementById('weight-ov').value = 0.2;
+      document.getElementById('weight-fitness').value = 0.3;
+      document.getElementById('weight-pop').value = 0.5;
+      updateScores();
+    }
   </script>
 </body>
 </html>
