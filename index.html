@@ -46,9 +46,7 @@
   </div>
 
   <script src="js/leaflet.js"></script>
-  <script src="data/gridlayer_mca_fitness_1.js"></script>
   <script>
-    // Kaart initialisatie
     var map = L.map('map', { zoomControl: false }).setView([52.09, 5.12], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OSM contributors'
@@ -64,7 +62,7 @@
     }
     function popFeature(feature, layer) {
       layer.on({ mouseover: highlightFeature, mouseout: resetHighlight });
-      layer.bindPopup('MCA_score: ' + (feature.properties.MCA_score || '').toFixed(2));
+      layer.bindPopup('MCA_score: ' + (feature.properties.MCA_score || 0).toFixed(2));
     }
 
     // Kleurenschaal
@@ -83,13 +81,25 @@
       };
     }
 
-    // GeoJSON-layer
-    var layer_group = L.geoJson(json_gridlayer_mca_fitness, {
-      style: styleFeature,
-      onEachFeature: popFeature
-    }).addTo(map);
+    var layer_group;
 
-    // Recalculatie functie
+    // Laad de GeoJSON en voeg toe aan de kaart
+    fetch('data/gridlayer_mca_fitness.geojson')
+      .then(res => res.json())
+      .then(data => {
+        layer_group = L.geoJSON(data, {
+          style: styleFeature,
+          onEachFeature: popFeature
+        }).addTo(map);
+        updateScores();
+
+        // Event listeners voor sliders
+        ['weight-ov','weight-fitness','weight-pop'].forEach(id =>
+          document.getElementById(id).addEventListener('input', updateScores)
+        );
+      })
+      .catch(err => console.error('GeoJSON laden mislukt:', err));
+
     function updateScores() {
       var w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
       var w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
@@ -106,12 +116,6 @@
         layer.bindPopup('MCA_score: ' + p.MCA_score.toFixed(2));
       });
     }
-
-    // Event listeners en initiële aanroep
-    ['weight-ov','weight-fitness','weight-pop'].forEach(id =>
-      document.getElementById(id).addEventListener('input', updateScores)
-    ); 
-    updateScores();
   </script>
 </body>
 </html>
