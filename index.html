@@ -1,83 +1,112 @@
 <!doctype html>
-<html lang="nl">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width" />
+  <title>GeoSenso: Locatievinder Fitness center</title>
   <link rel="stylesheet" href="css/leaflet.css" />
-  <link rel="icon" href="data/1-aafea2ea.ico" type="image/ico" />
+  <link rel="icon" href="data/NewLogo21.png" type="image/png" />
+
   <style>
-    html, body {
-      width: 100%; height: 100%; margin: 0; padding: 0;
-      font-family: sans-serif;
-      background: #eee;
-      overflow: hidden;
+    html, body, #map {
+      width: 100%;
+      height: 100%;
+      margin: 0; padding: 0;
     }
-    #header-container {
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 80px;
-      background: transparent;
-      display: flex;
-      align-items: center;
-      padding: 0 15px;
-      z-index: 1200;
-      user-select: none;
-    }
-    #logo {
-      height: 60px;
-      margin-right: 15px;
-      user-select: none;
-    }
-    #page-title {
-      font-size: 22px;
-      font-weight: 700;
-      color: #222;
-      user-select: none;
-    }
-    #map {
-      position: absolute;
-      top: 80px;
-      bottom: 0; left: 0; right: 0;
-      background: #eee;
-      z-index: 0;
-    }
+
+    /* Kaart en controls styling */
     .control-box {
       position: absolute;
-      top: 90px; /* net onder het logo en titel */
+      top: 70px;
       left: 10px;
-      background: rgba(255,255,255,0.95);
-      padding: 12px 15px 20px 15px;
+      background: rgba(255,255,255,0.9);
+      padding: 10px;
       border-radius: 8px;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
-      z-index: 1100;
-      width: 250px;
-      font-size: 13px;
-      user-select: none;
+      z-index: 1000;
+      font-family: sans-serif;
+      font-size: 14px;
+      width: 260px;
     }
     .control-box label {
       display: block;
-      margin-bottom: 10px;
-      cursor: pointer;
+      margin-bottom: 6px;
     }
-    .control-box input[type=range] {
-      width: 100%;
-      cursor: pointer;
+    
+    /* Bedrijfslogo */
+    #logo {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1200;
+      width: 140px;
+      user-select: none;
+      pointer-events: none;
     }
-    #reset-btn, #update-btn {
-      margin-top: 8px;
-      width: 100%;
-      padding: 7px;
-      font-size: 14px;
-      background: #333;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
+
+    /* Titel */
+    #title {
+      position: absolute;
+      top: 12px;
+      left: 170px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: #222;
+      z-index: 1200;
       user-select: none;
     }
+
+    /* Legenda linksonder */
+    #legend {
+      position: absolute;
+      bottom: 30px;
+      left: 10px;
+      background: white;
+      padding: 10px 14px;
+      border-radius: 6px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      font-family: sans-serif;
+      font-size: 12px;
+      color: #333;
+      z-index: 1100;
+      width: 210px;
+    }
+    #legend h4 {
+      margin: 0 0 8px 0;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .legend-bar {
+      height: 15px;
+      background: linear-gradient(to right, #d7191c, #fdae61, #a6d96a, #1a9641);
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+    .legend-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #555;
+      user-select: none;
+    }
+
+    /* Update button + info icoon */
     #update-btn {
       position: relative;
       padding-right: 25px;
+      margin-top: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      height: 32px;
+    }
+    #update-btn:hover {
+      background-color: #555;
     }
     #info-icon {
       position: absolute;
@@ -92,14 +121,15 @@
       font-weight: bold;
       text-align: center;
       line-height: 18px;
-      font-size: 12px;
+      font-size: 11px;
       cursor: pointer;
       user-select: none;
     }
     #info-text {
       position: absolute;
-      top: -42px;
-      right: 25px;
+      bottom: 100%; /* direct boven de knop */
+      right: 0;
+      margin-bottom: 6px;
       width: 230px;
       background: white;
       border: 1px solid #ccc;
@@ -112,192 +142,194 @@
       pointer-events: auto;
       user-select: none;
     }
-    /* Legenda */
-    .legend {
-      position: absolute;
-      bottom: 10px;
-      left: 10px;
-      padding: 8px 12px;
-      background: white;
-      font-size: 12px;
-      border-radius: 6px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.3);
-      z-index: 1100;
-      width: 180px;
-      line-height: 18px;
-      user-select: none;
-    }
-    .legend-title {
-      font-weight: bold;
-      margin-bottom: 7px;
-      text-align: center;
-    }
-    .legend-scale {
-      display: flex;
-      height: 16px;
-      margin-bottom: 4px;
+
+    /* Reset button styling */
+    #reset-btn {
+      margin-top: 8px;
+      background-color: #888;
+      color: white;
+      border: none;
       border-radius: 4px;
-      overflow: hidden;
+      padding: 6px 10px;
+      cursor: pointer;
+      user-select: none;
+      font-weight: 600;
     }
-    .legend-scale div {
-      flex: 1;
-    }
-    .legend-labels {
-      display: flex;
-      justify-content: space-between;
+    #reset-btn:hover {
+      background-color: #555;
     }
   </style>
-  <title>GeoSenso: Locatievinder Fitness Center</title>
 </head>
 <body>
 
-<div id="header-container">
+  <!-- Bedrijfslogo -->
   <img id="logo" src="data/NewLogo21.png" alt="Logo" />
-  <div id="page-title">GeoSenso: Locatievinder Fitness Center</div>
-</div>
 
-<div class="control-box">
-  <label for="weight-fitness">Nabijgelegen fitnesscentra:
-    <input type="range" min="0" max="1" step="0.1" id="weight-fitness" value="0.30" />
-  </label>
-  <label for="weight-ov">OV bereikbaarheid:
-    <input type="range" min="0" max="1" step="0.1" id="weight-ov" value="0.20" />
-  </label>
-  <label for="weight-pop">Bevolkingsdichtheid:
-    <input type="range" min="0" max="1" step="0.1" id="weight-pop" value="0.50" />
-  </label>
-  <button id="update-btn" type="button">Update suitability index
-    <div id="info-icon">i</div>
-  </button>
-  <div id="info-text">De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.</div>
-  <button id="reset-btn" type="button">Reset</button>
-</div>
+  <!-- Titel -->
+  <div id="title">GeoSenso: Locatievinder Fitness center</div>
 
-<div id="map"></div>
+  <!-- Kaart -->
+  <div id="map"></div>
 
-<div class="legend">
-  <div class="legend-title">Suitability index</div>
-  <div class="legend-scale">
-    <div style="background:#d7191c"></div>
-    <div style="background:#fdae61"></div>
-    <div style="background:#a6d96a"></div>
-    <div style="background:#1a9641"></div>
+  <!-- Legenda linksonder -->
+  <div id="legend">
+    <h4>Suitability index</h4>
+    <div class="legend-bar"></div>
+    <div class="legend-labels">
+      <span>1</span>
+      <span>3</span>
+      <span>5</span>
+      <span>7</span>
+      <span>10</span>
+    </div>
   </div>
-  <div class="legend-labels">
-    <span>1</span><span>3</span><span>6</span><span>10</span>
-  </div>
-</div>
 
-<script src="js/leaflet.js"></script>
-<script>
-  // Info icoon klik toggelen
-  const infoIcon = document.getElementById('info-icon');
-  const infoText = document.getElementById('info-text');
-  infoIcon.addEventListener('click', () => {
-    infoText.style.display = infoText.style.display === 'block' ? 'none' : 'block';
-  });
-  // Sluit info als ergens anders geklikt wordt
-  document.addEventListener('click', e => {
-    if (!infoIcon.contains(e.target) && !infoText.contains(e.target)) {
-      infoText.style.display = 'none';
+  <!-- Slider control menu -->
+  <div class="control-box">
+    <label>Nabijgelegen fitnesscentra:
+      <input type="range" min="0" max="1" step="0.1" id="weight-fitness" value="0.30" />
+    </label>
+    <label>OV bereikbaarheid:
+      <input type="range" min="0" max="1" step="0.1" id="weight-ov" value="0.20" />
+    </label>
+    <label>Bevolkingsdichtheid:
+      <input type="range" min="0" max="1" step="0.1" id="weight-pop" value="0.50" />
+    </label>
+
+    <button id="update-btn" type="button">Update suitability index
+      <div id="info-icon">i</div>
+      <div id="info-text">De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.</div>
+    </button>
+
+    <button id="reset-btn" type="button">Reset</button>
+  </div>
+
+  <!-- Leaflet scripts -->
+  <script src="js/leaflet.js"></script>
+
+  <script>
+    // Kaart initialisatie met maxBounds en maxBoundsViscosity 0 voor soepel pannen
+    var map = L.map('map', {
+      zoomControl: false,
+      minZoom: 11,
+      maxZoom: 18,
+      maxBounds: [
+        [51.90, 4.95],
+        [52.15, 5.35]
+      ],
+      maxBoundsViscosity: 0
+    }).setView([52.09, 5.12], 12);
+
+    // Zoom control rechtsboven plaatsen
+    L.control.zoom({ position: 'topright' }).addTo(map);
+
+    // TileLayer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OSM contributors'
+    }).addTo(map);
+
+    // Info icoon toggelen
+    const infoIcon = document.getElementById('info-icon');
+    const infoText = document.getElementById('info-text');
+
+    infoIcon.addEventListener('click', e => {
+      e.stopPropagation();
+      infoText.style.display = (infoText.style.display === 'block') ? 'none' : 'block';
+    });
+
+    document.addEventListener('click', e => {
+      if (!infoIcon.contains(e.target) && !infoText.contains(e.target)) {
+        infoText.style.display = 'none';
+      }
+    });
+
+    // Hover highlight functie
+    function highlightFeature(e) {
+      var layer = e.target;
+      layer.setStyle({ weight: 2, color: '#666' });
     }
-  });
+    function resetHighlight(e) {
+      layer_group.resetStyle(e.target);
+    }
 
-  // Init kaart met Utrecht en zoomlimieten passend op gebied
-  var map = L.map('map', {
-    zoomControl: false,
-    minZoom: 11,
-    maxZoom: 18,
-    maxBounds: [
-      [51.90, 4.95],
-      [52.15, 5.35]
-    ]
-  }).setView([52.09, 5.12], 12);
+    // Popup functie met 'Suitability index'
+    function popFeature(feature, layer) {
+      layer.on({ mouseover: highlightFeature, mouseout: resetHighlight });
+      layer.bindPopup('Suitability index: ' + (feature.properties.MCA_score || '').toFixed(2));
+    }
 
-  // Zoom control rechtsboven
-  L.control.zoom({ position: 'topright' }).addTo(map);
+    // Kleurenschaal functie
+    function getColor(score) {
+      return score > 6 ? '#1a9641' :
+             score > 4 ? '#a6d96a' :
+             score > 2 ? '#fdae61' :
+                         '#d7191c';
+    }
 
-  // Schaalbalk rechtsonder zichtbaar
-  L.control.scale({ position: 'bottomright' }).addTo(map);
+    // Style functie
+    function styleFeature(feature) {
+      return {
+        fillColor: getColor(feature.properties.MCA_score || 0),
+        weight: 1,
+        color: '#333',
+        fillOpacity: 0.7
+      };
+    }
 
-  // OpenStreetMap basemap
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
+    // Laad GeoJSON met fetch
+    var layer_group;
+    fetch('data/gridlayer_mca_fitness.geojson')
+      .then(res => res.json())
+      .then(data => {
+        layer_group = L.geoJson(data, {
+          style: styleFeature,
+          onEachFeature: popFeature
+        }).addTo(map);
+        updateScores(); // initial update
+      })
+      .catch(err => {
+        console.error('Fout bij laden GeoJSON:', err);
+        alert('Fout bij laden van de GeoJSON data.');
+      });
 
-  function getColor(score) {
-    return score > 6 ? '#1a9641' :
-           score > 4 ? '#a6d96a' :
-           score > 2 ? '#fdae61' :
-                       '#d7191c';
-  }
+    // Update functie MCA / suitability score
+    function updateScores() {
+      var w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
+      var w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
+      var w_pop = parseFloat(document.getElementById('weight-pop').value) || 0;
 
-  function styleFeature(feature) {
-    return {
-      fillColor: getColor(feature.properties.MCA_score || 0),
-      weight: 1,
-      color: '#333',
-      fillOpacity: 0.7
-    };
-  }
+      // Optionele check: gewichten mogen samen maximaal 1 zijn (of anders normaliseren)
 
-  function highlightFeature(e) {
-    var layer = e.target;
-    layer.setStyle({ weight: 2, color: '#666' });
-  }
-  function resetHighlight(e) {
-    layer_group.resetStyle(e.target);
-  }
-  function popFeature(feature, layer) {
-    layer.on({
-      mouseover: highlightFeature,
-      mouseout: resetHighlight
-    });
-    layer.bindPopup('Suitability index: ' + ((feature.properties.MCA_score || 0).toFixed(2)));
-  }
+      layer_group.eachLayer(function(layer) {
+        var p = layer.feature.properties;
+        var ov = parseFloat(p.score_bus) || 0;
+        var fit = parseFloat(p.score_fit) || 0;
+        var pop = parseFloat(p.score_pop) || 0;
+        p.MCA_score = w_ov * ov + w_fit * fit + w_pop * pop;
 
-  var layer_group;
+        layer.setStyle(styleFeature(layer.feature));
+        layer.bindPopup('Suitability index: ' + p.MCA_score.toFixed(2));
+      });
+    }
 
-  fetch('data/gridlayer_mca_fitness.geojson')
-    .then(res => res.json())
-    .then(data => {
-      layer_group = L.geoJSON(data, {
-        style: styleFeature,
-        onEachFeature: popFeature
-      }).addTo(map);
+    // Event listeners sliders
+    ['weight-ov', 'weight-fitness', 'weight-pop'].forEach(id =>
+      document.getElementById(id).addEventListener('input', updateScores)
+    );
+
+    // Reset knop functie
+    document.getElementById('reset-btn').addEventListener('click', () => {
+      document.getElementById('weight-ov').value = 0.20;
+      document.getElementById('weight-fitness').value = 0.30;
+      document.getElementById('weight-pop').value = 0.50;
       updateScores();
-    })
-    .catch(e => {
-      alert("Fout bij het laden van GeoJSON: " + e);
     });
+  </script>
 
-  function updateScores() {
-    var w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
-    var w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
-    var w_pop = parseFloat(document.getElementById('weight-pop').value) || 0;
-
-    layer_group.eachLayer(function(layer) {
-      var p = layer.feature.properties;
-      var ov = parseFloat(p.score_bus) || 0;
-      var fit = parseFloat(p.score_fit) || 0;
-      var pop = parseFloat(p.score_pop) || 0;
-      p.MCA_score = w_ov * ov + w_fit * fit + w_pop * pop;
-
-      layer.setStyle(styleFeature(layer.feature));
-      layer.bindPopup('Suitability index: ' + p.MCA_score.toFixed(2));
-    });
-  }
-
-  document.getElementById('update-btn').addEventListener('click', updateScores);
-
-  document.getElementById('reset-btn').addEventListener('click', () => {
-    document.getElementById('weight-ov').value = 0.20;
-    document.getElementById('weight-fitness').value = 0.30;
-    document.getElementById('weight-pop').value = 0.50;
-    updateScores();
-  });
-
-</script>
+  <!-- Schaalbalk rechtsonder -->
+  <script>
+    L.control.scale({ position: 'bottomright' }).addTo(map);
+  </script>
 
 </body>
 </html>
