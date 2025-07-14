@@ -4,35 +4,25 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width" />
   <link rel="stylesheet" href="css/leaflet.css" />
+  <link rel="icon" href="data/NewLogo21.png" type="image/png" />
   <style>
     html, body, #map {
       width: 100%; height: 100%; margin: 0; padding: 0;
     }
     body {
       font-family: sans-serif;
+      background: #eee;
+      /* Verwijder witte balk, dus geen header */
     }
     #map {
       position: absolute;
-      top: 115px; /* ruimte voor header + logo + kleine marge */
+      top: 80px; /* Ruimte voor logo */
       bottom: 0; left: 0; right: 0;
       background: #eee;
     }
-    header {
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 50px;
-      background: #333;
-      color: white;
-      line-height: 50px;
-      font-size: 20px;
-      font-weight: bold;
-      text-align: center;
-      z-index: 1001;
-      user-select: none;
-    }
     #logo {
       position: absolute;
-      top: 50px; 
+      top: 10px; 
       left: 10px;
       height: 60px;
       z-index: 1100;
@@ -40,7 +30,7 @@
     }
     .control-box {
       position: absolute;
-      top: 115px; /* net onder het logo */
+      top: 90px; /* net onder het logo */
       left: 10px;
       background: rgba(255,255,255,0.95);
       padding: 12px 15px 20px 15px;
@@ -150,8 +140,6 @@
 </head>
 <body>
 
-<header>GeoSenso: Locatievinder Fitness Center</header>
-
 <img id="logo" src="data/NewLogo21.png" alt="Logo" />
 
 <div class="control-box">
@@ -205,7 +193,7 @@
   var map = L.map('map', {
     zoomControl: false,
     minZoom: 11,
-    maxZoom: 14,
+    maxZoom: 18,
     maxBounds: [
       [51.90, 4.95], // zuidwest Utrecht omgeving
       [52.15, 5.35]  // noordoost Utrecht omgeving
