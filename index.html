@@ -100,12 +100,8 @@
     .legend-scale div {
       flex: 1;
     }
-    .leaflet-control-zoom {
-      right: 10px !important;
-      left: auto !important;
-    }
   </style>
-  <title>Optimale locatie voor fitnesscentra binnen de Gemeente Utrecht</title>
+  <title>GeoSenso: Locatievinder voor Fitnesscentra</title>
 </head>
 <body>
   <div id="map"></div>
@@ -114,7 +110,7 @@
     <img src="data/NewLogo21.png" alt="Logo">
   </div>
 
-  <div class="title-box">Optimale locatie voor fitnesscentra binnen de Gemeente Utrecht</div>
+  <div class="title-box">GeoSenso: Locatievinder voor Fitnesscentra</div>
 
   <div class="control-box">
     <label>OV bereikbaarheid:
@@ -147,9 +143,12 @@
 
   <script src="js/leaflet.js"></script>
   <script>
-    var map = L.map('map', { zoomControl: true }).setView([52.09, 5.12], 12);
+    var map = L.map('map').setView([52.09, 5.12], 12);
 
-    // Voeg de OpenStreetMap tile layer toe (cruciaal!)
+    // Zet zoomcontrols naar rechtsboven
+    map.zoomControl.setPosition('topright');
+
+    // Voeg de tile layer toe
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
@@ -215,7 +214,6 @@
       document.getElementById(id).addEventListener('input', updateScores)
     );
 
-    // Info button klik
     document.getElementById('info-icon').addEventListener('click', () => {
       const box = document.getElementById('info-box');
       box.style.display = box.style.display === 'block' ? 'none' : 'block';
