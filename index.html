@@ -269,170 +269,106 @@
     zoomSnap: 0.5,
     zoomDelta: 0.5
   }).setView(getCenterCoords(), 12);
-  
+
   map.setZoom(map.getZoom() - 0.5);
-  
+
   L.control.zoom({ position: 'topright' }).addTo(map);
   L.control.scale({ position: 'bottomright' }).addTo(map);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  // Basislaag OpenStreetMap
+  const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
+  });
+
+  // Satellietlaag (voorbeeld URL, pas aan naar werkende satelliettiles)
+  const satelliteLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenTopoMap contributors'
+  });
+
+  // Voeg basislagen toe aan layers control
+  const baseLayers = {
+    "OpenStreetMap": osmLayer,
+    "Satelliet": satelliteLayer
+  };
+
+  // Voeg standaard OpenStreetMap toe aan de kaart
+  osmLayer.addTo(map);
+
+  // Voeg layer switcher toe, rechtsboven onder de zoom controls
+  L.control.layers(baseLayers, null, { position: 'topright' }).addTo(map);
+
+  // Rasterlaag voorbeeld (hier gewoon een grijs raster om het te demonstreren)
+  let rasterLayer = L.tileLayer('https://tiles.wmflabs.org/hillshading/{z}/{x}/{y}.png', {
+    opacity: 0.5
   }).addTo(map);
 
-  function getColor(score) {
-    return score > 6 ? '#1a9641' :
-           score > 4 ? '#a6d96a' :
-           score > 2 ? '#fdae61' :
-                       '#d7191c';
-  }
-
-  function styleFeature(feature) {
-    return {
-      fillColor: getColor(feature.properties.MCA_score || 0),
-      weight: 1,
-      color: '#333',
-      fillOpacity: currentTransparency
-    };
-  }
-
-  function highlightFeature(e) {
-    const layer = e.target;
-    layer.setStyle({ weight: 2, color: '#666' });
-  }
-
-  function resetHighlight(e) {
-    layer_group.resetStyle(e.target);
-  }
-
-  function popFeature(feature, layer) {
-    layer.on({
-      mouseover: highlightFeature,
-      mouseout: resetHighlight
-    });
-    layer.bindPopup('Suitability index: ' + ((feature.properties.MCA_score || 0).toFixed(2)));
-  }
-
-  let layer_group;
-  let currentTransparency = 0.5;
-
-  fetch('data/gridlayer_mca_fitness.geojson')
-    .then(res => res.json())
-    .then(data => {
-      layer_group = L.geoJSON(data, {
-        style: styleFeature,
-        onEachFeature: popFeature
-      }).addTo(map);
-      updateScores();
-    })
-    .catch(e => {
-      alert("Fout bij het laden van GeoJSON: " + e);
-    });
-
-  function updateScores() {
-    let w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
-    let w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
-    let w_pop = parseFloat(document.getElementById('weight-pop').value) || 0;
-
-    // Automatische normalisatie:
-    const sum = w_ov + w_fit + w_pop;
-    if (sum > 0) {
-      w_ov /= sum;
-      w_fit /= sum;
-      w_pop /= sum;
-    } else {
-      // voorkom delen door nul, zet default waarden
-      w_ov = 0.2; w_fit = 0.3; w_pop = 0.5;
-    }
-
-    // Update sliders naar genormaliseerde waarden en percentages
-    document.getElementById('weight-ov').value = w_ov.toFixed(3);
-    document.getElementById('percent-ov').textContent = Math.round(w_ov * 100) + '%';
-
-    document.getElementById('weight-fitness').value = w_fit.toFixed(3);
-    document.getElementById('percent-fitness').textContent = Math.round(w_fit * 100) + '%';
-
-    document.getElementById('weight-pop').value = w_pop.toFixed(3);
-    document.getElementById('percent-pop').textContent = Math.round(w_pop * 100) + '%';
-
-    layer_group.eachLayer(layer => {
-      const p = layer.feature.properties;
-      const ov = parseFloat(p.score_bus) || 0;
-      const fit = parseFloat(p.score_fit) || 0;
-      const pop = parseFloat(p.score_pop) || 0;
-      p.MCA_score = w_ov * ov + w_fit * fit + w_pop * pop;
-
-      layer.setStyle(styleFeature(layer.feature));
-      layer.bindPopup('Suitability index: ' + p.MCA_score.toFixed(2));
-    });
-  }
-
-  // Update percentage tekst bij slider beweging
-  function updatePercentDisplay(idRange, idPercent) {
-    const range = document.getElementById(idRange);
-    const percent = document.getElementById(idPercent);
-    range.addEventListener('input', () => {
-      percent.textContent = Math.round(parseFloat(range.value) * 100) + '%';
-    });
-  }
-  updatePercentDisplay('weight-fitness', 'percent-fitness');
-  updatePercentDisplay('weight-ov', 'percent-ov');
-  updatePercentDisplay('weight-pop', 'percent-pop');
-  updatePercentDisplay('transparency-slider', 'percent-transparency');
-
-  // Transparantie slider
-  document.getElementById('transparency-slider').addEventListener('input', e => {
-    currentTransparency = parseFloat(e.target.value);
-    document.getElementById('percent-transparency').textContent = Math.round(currentTransparency * 100) + '%';
-    if (layer_group) {
-      layer_group.setStyle(layer => ({
-        ...styleFeature(layer.feature)
-      }));
-    }
+  // Transparantie slider functie
+  const transparencySlider = document.getElementById('transparency-slider');
+  transparencySlider.addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value);
+    rasterLayer.setOpacity(val);
+    document.getElementById('percent-transparency').textContent = `${Math.round(val * 100)}%`;
   });
 
-  // Knoppen
-  document.getElementById('update-btn').addEventListener('click', () => {
-    updateScores();
+  // Gewicht sliders (functioneel maken indien nodig)
+  const weightFitness = document.getElementById('weight-fitness');
+  const weightOV = document.getElementById('weight-ov');
+  const weightPop = document.getElementById('weight-pop');
+  const percentFitness = document.getElementById('percent-fitness');
+  const percentOV = document.getElementById('percent-ov');
+  const percentPop = document.getElementById('percent-pop');
+
+  weightFitness.addEventListener('input', (e) => {
+    percentFitness.textContent = `${Math.round(e.target.value * 100)}%`;
+  });
+  weightOV.addEventListener('input', (e) => {
+    percentOV.textContent = `${Math.round(e.target.value * 100)}%`;
+  });
+  weightPop.addEventListener('input', (e) => {
+    percentPop.textContent = `${Math.round(e.target.value * 100)}%`;
   });
 
-  document.getElementById('reset-btn').addEventListener('click', () => {
-    document.getElementById('weight-fitness').value = 0.3;
-    document.getElementById('weight-ov').value = 0.2;
-    document.getElementById('weight-pop').value = 0.5;
-    document.getElementById('transparency-slider').value = 0.7;
-
-    document.getElementById('percent-fitness').textContent = '30%';
-    document.getElementById('percent-ov').textContent = '20%';
-    document.getElementById('percent-pop').textContent = '50%';
-    document.getElementById('percent-transparency').textContent = '70%';
-
-    currentTransparency = 0.7;
-    if (layer_group) {
-      layer_group.setStyle(layer => ({
-        ...styleFeature(layer.feature)
-      }));
-    }
-    updateScores();
+  // Update knop (demo - hier zou je een functie kunnen aanroepen)
+  const updateBtn = document.getElementById('update-btn');
+  updateBtn.addEventListener('click', () => {
+    alert('Update suitability index functie is nog niet geïmplementeerd.');
   });
 
-  const controlBox = document.getElementById('control-box');
+  // Reset knop
+  const resetBtn = document.getElementById('reset-btn');
+  resetBtn.addEventListener('click', () => {
+    weightFitness.value = 0.30;
+    weightOV.value = 0.20;
+    weightPop.value = 0.50;
+    transparencySlider.value = 0.5;
+    rasterLayer.setOpacity(0.5);
+    percentFitness.textContent = '30%';
+    percentOV.textContent = '20%';
+    percentPop.textContent = '50%';
+    document.getElementById('percent-transparency').textContent = '50%';
+  });
+
+  // Menu toggle knop voor mobiel
   const toggleMenuBtn = document.getElementById('toggle-menu-btn');
+  const controlBox = document.getElementById('control-box');
   const closeMenuBtn = document.getElementById('close-menu-btn');
 
-  closeMenuBtn.addEventListener('click', () => {
+  if (window.innerWidth <= 768) {
     controlBox.style.display = 'none';
     toggleMenuBtn.style.display = 'block';
-  });
+  }
 
   toggleMenuBtn.addEventListener('click', () => {
     controlBox.style.display = 'flex';
     toggleMenuBtn.style.display = 'none';
   });
 
-  // Start met menu zichtbaar
-  controlBox.style.display = 'flex';
-  toggleMenuBtn.style.display = 'none';
+  closeMenuBtn.addEventListener('click', () => {
+    controlBox.style.display = 'none';
+    toggleMenuBtn.style.display = 'block';
+  });
 
 </script>
+
 </body>
 </html>
