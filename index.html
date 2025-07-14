@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="nl">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
-  <link rel="stylesheet" href="css/leaflet.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width" />
+  <link rel="stylesheet" href="css/leaflet.css" />
   <style>
     html, body, #map {
       width: 100%;
@@ -114,20 +114,20 @@
   <div id="map"></div>
 
   <div id="logo">
-    <img src="data/NewLogo21.png" alt="Logo">
+    <img src="data/NewLogo21.png" alt="Logo" />
   </div>
 
   <div class="title-box">GeoSenso: Locatievinder voor Fitnesscentra</div>
 
   <div class="control-box">
     <label>OV bereikbaarheid:
-      <input type="range" min="0" max="1" step="0.1" id="weight-ov" value="0.2">
+      <input type="range" min="0" max="1" step="0.1" id="weight-ov" value="0.2" />
     </label>
     <label>Nabijgelegen fitnesscentra:
-      <input type="range" min="0" max="1" step="0.1" id="weight-fitness" value="0.3">
+      <input type="range" min="0" max="1" step="0.1" id="weight-fitness" value="0.3" />
     </label>
     <label>Bevolkingsdichtheid:
-      <input type="range" min="0" max="1" step="0.1" id="weight-pop" value="0.5">
+      <input type="range" min="0" max="1" step="0.1" id="weight-pop" value="0.5" />
     </label>
     <div class="control-buttons">
       <button onclick="updateScores()">Update suitability index</button>
@@ -136,7 +136,9 @@
     </div>
   </div>
 
-  <div id="info-box">De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.</div>
+  <div id="info-box">
+    De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.
+  </div>
 
   <div class="legend">
     <div class="legend-title">Suitability index</div>
@@ -153,7 +155,19 @@
 
   <script src="js/leaflet.js"></script>
   <script>
-    var map = L.map('map').setView([52.09, 5.12], 12);
+    // Grenzen rond Utrecht (even voorbeeld, pas aan naar jouw gewenste gebied)
+    var southWest = L.latLng(51.7, 4.8);
+    var northEast = L.latLng(52.4, 5.6);
+    var bounds = L.latLngBounds(southWest, northEast);
+
+    var map = L.map('map', {
+      minZoom: 7,
+      maxZoom: 18,
+      maxBounds: bounds,
+      maxBoundsViscosity: 0.5,
+      zoomControl: false
+    }).setView([52.09, 5.12], 12);
+
     map.zoomControl.setPosition('topright');
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -230,7 +244,7 @@
       box.style.display = box.style.display === 'block' ? 'none' : 'block';
     });
 
-    // Reset-functie sliders met nieuwe waarden 20%, 30%, 50%
+    // Reset-functie sliders met waarden 20%, 30%, 50%
     function resetSliders() {
       document.getElementById('weight-ov').value = 0.2;
       document.getElementById('weight-fitness').value = 0.3;
