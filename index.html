@@ -204,15 +204,15 @@
 
   // Kaart initialisatie
   const map = L.map('map', {
-    zoomControl: false,
-    minZoom: 11,
-    maxZoom: 18,
-    maxBounds: [
-      [51.50, 4.70], // zuidwest-Nederland
-      [53.50, 7.20]  // noordoost-Nederland
-    ],
-    maxBoundsViscosity: 1.0
-  }).setView([52.09, 5.12], 12); // Gemeente Utrecht
+  zoomControl: false,
+  minZoom: 11,
+  maxZoom: 18,
+  maxBounds: [
+    [51.90, 4.95],
+    [52.15, 5.35]
+  ],
+  maxBoundsViscosity: 1.0
+}).setView([52.09, 5.12], 12); // Gemeente Utrecht
 
   L.control.zoom({ position: 'topright' }).addTo(map);
   L.control.scale({ position: 'bottomright' }).addTo(map);
