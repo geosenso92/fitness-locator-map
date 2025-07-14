@@ -26,18 +26,15 @@
     #logo {
       height: 60px;
       margin-right: 15px;
-      user-select: none;
     }
     #page-title {
       font-size: 22px;
       font-weight: 700;
       color: #222;
-      user-select: none;
     }
     #map {
       position: absolute;
-      top: 80px;
-      bottom: 0; left: 0; right: 0;
+      top: 80px; bottom: 0; left: 0; right: 0;
       background: #eee;
       z-index: 0;
     }
@@ -52,14 +49,6 @@
       z-index: 1100;
       width: 250px;
       font-size: 13px;
-      user-select: none;
-    }
-    .control-box.collapsed label,
-    .control-box.collapsed input[type=range],
-    .control-box.collapsed #transparency-toggle,
-    .control-box.collapsed #update-btn,
-    .control-box.collapsed #reset-btn {
-      display: none;
     }
     .control-box label {
       display: block;
@@ -68,7 +57,10 @@
     }
     .control-box input[type=range] {
       width: 100%;
-      cursor: pointer;
+    }
+    .slider-value {
+      float: right;
+      font-weight: bold;
     }
     #reset-btn, #update-btn {
       margin-top: 8px;
@@ -80,7 +72,6 @@
       border: none;
       border-radius: 4px;
       cursor: pointer;
-      user-select: none;
     }
     #update-btn {
       position: relative;
@@ -101,7 +92,6 @@
       line-height: 18px;
       font-size: 12px;
       cursor: pointer;
-      user-select: none;
     }
     #info-text {
       position: absolute;
@@ -117,8 +107,6 @@
       box-shadow: 0 0 5px rgba(0,0,0,0.2);
       display: none;
       z-index: 1150;
-      pointer-events: auto;
-      user-select: none;
     }
     .legend {
       position: absolute;
@@ -132,7 +120,6 @@
       z-index: 1100;
       width: 180px;
       line-height: 18px;
-      user-select: none;
     }
     .legend-title {
       font-weight: bold;
@@ -153,6 +140,14 @@
       display: flex;
       justify-content: space-between;
     }
+    #toggle-menu {
+      margin-top: 10px;
+      background: none;
+      border: none;
+      color: #0077cc;
+      cursor: pointer;
+      text-decoration: underline;
+    }
   </style>
   <title>Locatievinder Fitness Center</title>
 </head>
@@ -163,32 +158,29 @@
   <div id="page-title">Locatievinder Fitness Center</div>
 </div>
 
-<div class="control-box" id="control-panel">
-  <button id="toggle-panel-btn" type="button" style="margin-bottom: 10px;">Sluit menu ▲</button>
-
-  <label for="weight-fitness">Nabijgelegen fitnesscentra:
-    <input type="range" min="0" max="1" step="0.1" id="weight-fitness" value="0.30" />
-    <span id="val-fitness">0.30</span>
+<div class="control-box" id="control-box">
+  <label for="weight-fitness">Nabijgelegen fitnesscentra: 
+    <span class="slider-value" id="val-fitness">30%</span>
+    <input type="range" min="0" max="100" step="10" id="weight-fitness" value="30" />
   </label>
   <label for="weight-ov">OV bereikbaarheid:
-    <input type="range" min="0" max="1" step="0.1" id="weight-ov" value="0.20" />
-    <span id="val-ov">0.20</span>
+    <span class="slider-value" id="val-ov">20%</span>
+    <input type="range" min="0" max="100" step="10" id="weight-ov" value="20" />
   </label>
   <label for="weight-pop">Bevolkingsdichtheid:
-    <input type="range" min="0" max="1" step="0.1" id="weight-pop" value="0.50" />
-    <span id="val-pop">0.50</span>
+    <span class="slider-value" id="val-pop">50%</span>
+    <input type="range" min="0" max="100" step="10" id="weight-pop" value="50" />
   </label>
-
-  <label>
-    <input type="checkbox" id="transparency-toggle" />
-    Raster transparanter
+  <label for="opacity-slider">Raster transparantie:
+    <span class="slider-value" id="val-opacity">70%</span>
+    <input type="range" min="0" max="100" step="10" id="opacity-slider" value="70" />
   </label>
-
   <button id="update-btn" type="button">Update suitability index
     <div id="info-icon">i</div>
-    <div id="info-text">De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.</div>
+    <div id="info-text">De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast. Zorg dat de som van de gewichten 100% is.</div>
   </button>
   <button id="reset-btn" type="button">Reset</button>
+  <button id="toggle-menu">Sluit menu</button>
 </div>
 
 <div id="map"></div>
@@ -232,8 +224,8 @@
     zoomSnap: 0.5,
     zoomDelta: 0.5
   }).setView(getCenterCoords(), 12);
-
   map.setZoom(map.getZoom() - 0.5);
+
   L.control.zoom({ position: 'topright' }).addTo(map);
   L.control.scale({ position: 'bottomright' }).addTo(map);
 
@@ -242,9 +234,13 @@
   }).addTo(map);
 
   let layer_group;
+  let currentOpacity = 0.7;
 
   function getColor(score) {
-    return score > 6 ? '#1a9641' : score > 4 ? '#a6d96a' : score > 2 ? '#fdae61' : '#d7191c';
+    return score > 6 ? '#1a9641' :
+           score > 4 ? '#a6d96a' :
+           score > 2 ? '#fdae61' :
+                       '#d7191c';
   }
 
   function styleFeature(feature) {
@@ -252,7 +248,7 @@
       fillColor: getColor(feature.properties.MCA_score || 0),
       weight: 1,
       color: '#333',
-      fillOpacity: document.getElementById('transparency-toggle').checked ? 0.3 : 0.7
+      fillOpacity: currentOpacity
     };
   }
 
@@ -265,7 +261,10 @@
   }
 
   function popFeature(feature, layer) {
-    layer.on({ mouseover: highlightFeature, mouseout: resetHighlight });
+    layer.on({
+      mouseover: highlightFeature,
+      mouseout: resetHighlight
+    });
     layer.bindPopup('Suitability index: ' + ((feature.properties.MCA_score || 0).toFixed(2)));
   }
 
@@ -277,13 +276,12 @@
         onEachFeature: popFeature
       }).addTo(map);
       updateScores();
-    })
-    .catch(e => alert("Fout bij het laden van GeoJSON: " + e));
+    });
 
   function updateScores() {
-    const w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
-    const w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
-    const w_pop = parseFloat(document.getElementById('weight-pop').value) || 0;
+    const w_ov = parseFloat(document.getElementById('weight-ov').value) / 100;
+    const w_fit = parseFloat(document.getElementById('weight-fitness').value) / 100;
+    const w_pop = parseFloat(document.getElementById('weight-pop').value) / 100;
 
     layer_group.eachLayer(layer => {
       const p = layer.feature.properties;
@@ -295,63 +293,48 @@
       layer.setStyle(styleFeature(layer.feature));
       layer.bindPopup('Suitability index: ' + p.MCA_score.toFixed(2));
     });
-
-    checkSum();
   }
+
+  // Slider live updates
+  ['weight-fitness', 'weight-ov', 'weight-pop', 'opacity-slider'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      document.getElementById('val-' + id.split('-')[1]).textContent = document.getElementById(id).value + '%';
+
+      if (id === 'opacity-slider') {
+        currentOpacity = parseInt(document.getElementById('opacity-slider').value) / 100;
+        updateScores();
+      }
+    });
+  });
 
   document.getElementById('update-btn').addEventListener('click', updateScores);
 
   document.getElementById('reset-btn').addEventListener('click', () => {
-    document.getElementById('weight-ov').value = 0.20;
-    document.getElementById('weight-fitness').value = 0.30;
-    document.getElementById('weight-pop').value = 0.50;
-    ['ov', 'fitness', 'pop'].forEach(id => {
-      document.getElementById('val-' + id).textContent = document.getElementById('weight-' + id).value;
+    document.getElementById('weight-ov').value = 20;
+    document.getElementById('weight-fitness').value = 30;
+    document.getElementById('weight-pop').value = 50;
+    document.getElementById('opacity-slider').value = 70;
+    ['ov', 'fitness', 'pop', 'opacity'].forEach(type => {
+      document.getElementById('val-' + type).textContent = document.getElementById('weight-' + type)?.value + '%' || '70%';
     });
+    currentOpacity = 0.7;
     updateScores();
   });
 
-  ['ov', 'fitness', 'pop'].forEach(id => {
-    const slider = document.getElementById('weight-' + id);
-    const label = document.getElementById('val-' + id);
-    slider.addEventListener('input', () => {
-      label.textContent = parseFloat(slider.value).toFixed(2);
-      checkSum();
-    });
-  });
-
-  function checkSum() {
-    const w1 = parseFloat(document.getElementById('weight-fitness').value) || 0;
-    const w2 = parseFloat(document.getElementById('weight-ov').value) || 0;
-    const w3 = parseFloat(document.getElementById('weight-pop').value) || 0;
-    const total = w1 + w2 + w3;
-    const btn = document.getElementById('update-btn');
-
-    if (Math.abs(total - 1) > 0.01) {
-      btn.style.backgroundColor = 'crimson';
-      btn.textContent = 'Wegingen ≠ 1!';
+  document.getElementById('toggle-menu').addEventListener('click', () => {
+    const box = document.getElementById('control-box');
+    if (box.style.display === 'none') {
+      box.style.display = 'block';
+      document.getElementById('toggle-menu').textContent = 'Sluit menu';
     } else {
-      btn.style.backgroundColor = '#333';
-      btn.textContent = 'Update suitability index';
+      box.style.display = 'none';
+      document.getElementById('toggle-menu').textContent = 'Open locatievinder menu';
     }
-  }
-
-  document.getElementById('transparency-toggle').addEventListener('change', () => {
-    if (layer_group) layer_group.setStyle(styleFeature);
-  });
-
-  document.getElementById('toggle-panel-btn').addEventListener('click', () => {
-    const panel = document.getElementById('control-panel');
-    const btn = document.getElementById('toggle-panel-btn');
-    panel.classList.toggle('collapsed');
-    btn.textContent = panel.classList.contains('collapsed') ? 'Open menu ▼' : 'Sluit menu ▲';
   });
 
   window.addEventListener('resize', () => {
     map.setView(getCenterCoords(), 12);
   });
-
-  checkSum();
 </script>
 
 </body>
