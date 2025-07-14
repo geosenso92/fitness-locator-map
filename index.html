@@ -82,7 +82,7 @@
       margin-top: 10px;
       user-select: none;
     }
-    #reset-btn, #update-btn {
+    #reset-btn, #update-btn, #download-btn {
       margin-top: 8px;
       width: 100%;
       padding: 7px;
@@ -216,6 +216,7 @@
     <div id="info-text">De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.</div>
   </button>
   <button id="reset-btn" type="button">Reset</button>
+  <button id="download-btn" type="button">Download GeoJSON</button>
   <button id="close-menu-btn" type="button" style="margin-top: 10px;">Sluit menu</button>
 </div>
 
@@ -251,9 +252,9 @@
 
   function getCenterCoords() {
     if (window.innerWidth <= 768) {
-      return [52.10, 5.10];  // mobiel iets westelijker
+      return [52.10, 5.10];
     } else {
-      return [52.09, 5.42];  // desktop
+      return [52.09, 5.42];
     }
   }
 
@@ -269,9 +270,9 @@
     zoomSnap: 0.5,
     zoomDelta: 0.5
   }).setView(getCenterCoords(), 12);
-  
+
   map.setZoom(map.getZoom() - 0.5);
-  
+
   L.control.zoom({ position: 'topright' }).addTo(map);
   L.control.scale({ position: 'bottomright' }).addTo(map);
 
@@ -333,18 +334,15 @@
     let w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
     let w_pop = parseFloat(document.getElementById('weight-pop').value) || 0;
 
-    // Automatische normalisatie:
     const sum = w_ov + w_fit + w_pop;
     if (sum > 0) {
       w_ov /= sum;
       w_fit /= sum;
       w_pop /= sum;
     } else {
-      // voorkom delen door nul, zet default waarden
       w_ov = 0.2; w_fit = 0.3; w_pop = 0.5;
     }
 
-    // Update sliders naar genormaliseerde waarden en percentages
     document.getElementById('weight-ov').value = w_ov.toFixed(3);
     document.getElementById('percent-ov').textContent = Math.round(w_ov * 100) + '%';
 
@@ -366,7 +364,6 @@
     });
   }
 
-  // Update percentage tekst bij slider beweging
   function updatePercentDisplay(idRange, idPercent) {
     const range = document.getElementById(idRange);
     const percent = document.getElementById(idPercent);
@@ -379,7 +376,6 @@
   updatePercentDisplay('weight-pop', 'percent-pop');
   updatePercentDisplay('transparency-slider', 'percent-transparency');
 
-  // Transparantie slider
   document.getElementById('transparency-slider').addEventListener('input', e => {
     currentTransparency = parseFloat(e.target.value);
     document.getElementById('percent-transparency').textContent = Math.round(currentTransparency * 100) + '%';
@@ -390,7 +386,6 @@
     }
   });
 
-  // Knoppen
   document.getElementById('update-btn').addEventListener('click', () => {
     updateScores();
   });
@@ -415,6 +410,26 @@
     updateScores();
   });
 
+  document.getElementById('download-btn').addEventListener('click', () => {
+    if (!layer_group) {
+      alert('Laag nog niet geladen.');
+      return;
+    }
+
+    const geojson = layer_group.toGeoJSON();
+    const geojsonStr = JSON.stringify(geojson);
+    const blob = new Blob([geojsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "fitness_suitability.geojson";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
   const controlBox = document.getElementById('control-box');
   const toggleMenuBtn = document.getElementById('toggle-menu-btn');
   const closeMenuBtn = document.getElementById('close-menu-btn');
@@ -429,10 +444,8 @@
     toggleMenuBtn.style.display = 'none';
   });
 
-  // Start met menu zichtbaar
   controlBox.style.display = 'flex';
   toggleMenuBtn.style.display = 'none';
-
 </script>
 </body>
 </html>
