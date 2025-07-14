@@ -4,39 +4,52 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width" />
   <link rel="stylesheet" href="css/leaflet.css" />
-  <link rel="icon" href="data/NewLogo21.png" type="image/png" />
+  <link rel="icon" href="data/1-aafea2ea.ico" type="image/ico" />
   <style>
-    html, body, #map {
+    html, body {
       width: 100%; height: 100%; margin: 0; padding: 0;
-    }
-    body {
       font-family: sans-serif;
       background: #eee;
-      /* Verwijder witte balk, dus geen header */
+      overflow: hidden;
+    }
+    #header-container {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 80px;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      padding: 0 15px;
+      z-index: 1200;
+      user-select: none;
+    }
+    #logo {
+      height: 60px;
+      margin-right: 15px;
+      user-select: none;
+    }
+    #page-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #222;
+      user-select: none;
     }
     #map {
       position: absolute;
-      top: 80px; /* Ruimte voor logo */
+      top: 80px;
       bottom: 0; left: 0; right: 0;
       background: #eee;
-    }
-    #logo {
-      position: absolute;
-      top: 10px; 
-      left: 10px;
-      height: 60px;
-      z-index: 1100;
-      user-select: none;
+      z-index: 0;
     }
     .control-box {
       position: absolute;
-      top: 90px; /* net onder het logo */
+      top: 90px; /* net onder het logo en titel */
       left: 10px;
       background: rgba(255,255,255,0.95);
       padding: 12px 15px 20px 15px;
       border-radius: 8px;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
-      z-index: 1000;
+      z-index: 1100;
       width: 250px;
       font-size: 13px;
       user-select: none;
@@ -79,7 +92,7 @@
       font-weight: bold;
       text-align: center;
       line-height: 18px;
-      font-size: 12px; /* iets kleiner lettertype */
+      font-size: 12px;
       cursor: pointer;
       user-select: none;
     }
@@ -91,15 +104,14 @@
       background: white;
       border: 1px solid #ccc;
       padding: 7px 8px;
-      font-size: 11px; /* kleiner lettertype */
+      font-size: 11px;
       border-radius: 4px;
       box-shadow: 0 0 5px rgba(0,0,0,0.2);
       display: none;
-      z-index: 1050;
+      z-index: 1150;
       pointer-events: auto;
       user-select: none;
     }
-
     /* Legenda */
     .legend {
       position: absolute;
@@ -110,7 +122,7 @@
       font-size: 12px;
       border-radius: 6px;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
-      z-index: 1000;
+      z-index: 1100;
       width: 180px;
       line-height: 18px;
       user-select: none;
@@ -134,13 +146,15 @@
       display: flex;
       justify-content: space-between;
     }
-
   </style>
   <title>GeoSenso: Locatievinder Fitness Center</title>
 </head>
 <body>
 
-<img id="logo" src="data/NewLogo21.png" alt="Logo" />
+<div id="header-container">
+  <img id="logo" src="data/NewLogo21.png" alt="Logo" />
+  <div id="page-title">GeoSenso: Locatievinder Fitness Center</div>
+</div>
 
 <div class="control-box">
   <label for="weight-fitness">Nabijgelegen fitnesscentra:
@@ -195,8 +209,8 @@
     minZoom: 11,
     maxZoom: 18,
     maxBounds: [
-      [51.90, 4.95], // zuidwest Utrecht omgeving
-      [52.15, 5.35]  // noordoost Utrecht omgeving
+      [51.90, 4.95],
+      [52.15, 5.35]
     ]
   }).setView([52.09, 5.12], 12);
 
@@ -211,7 +225,6 @@
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
-  // Kleurenfunctie
   function getColor(score) {
     return score > 6 ? '#1a9641' :
            score > 4 ? '#a6d96a' :
@@ -245,7 +258,6 @@
 
   var layer_group;
 
-  // GeoJSON inladen via fetch
   fetch('data/gridlayer_mca_fitness.geojson')
     .then(res => res.json())
     .then(data => {
@@ -253,7 +265,7 @@
         style: styleFeature,
         onEachFeature: popFeature
       }).addTo(map);
-      updateScores(); // init scores
+      updateScores();
     })
     .catch(e => {
       alert("Fout bij het laden van GeoJSON: " + e);
