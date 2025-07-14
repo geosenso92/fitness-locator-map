@@ -54,6 +54,13 @@
       font-size: 13px;
       user-select: none;
     }
+    .control-box.collapsed label,
+    .control-box.collapsed input[type=range],
+    .control-box.collapsed #transparency-toggle,
+    .control-box.collapsed #update-btn,
+    .control-box.collapsed #reset-btn {
+      display: none;
+    }
     .control-box label {
       display: block;
       margin-bottom: 10px;
@@ -156,16 +163,27 @@
   <div id="page-title">Locatievinder Fitness Center</div>
 </div>
 
-<div class="control-box">
+<div class="control-box" id="control-panel">
+  <button id="toggle-panel-btn" type="button" style="margin-bottom: 10px;">Sluit menu ▲</button>
+
   <label for="weight-fitness">Nabijgelegen fitnesscentra:
     <input type="range" min="0" max="1" step="0.1" id="weight-fitness" value="0.30" />
+    <span id="val-fitness">0.30</span>
   </label>
   <label for="weight-ov">OV bereikbaarheid:
     <input type="range" min="0" max="1" step="0.1" id="weight-ov" value="0.20" />
+    <span id="val-ov">0.20</span>
   </label>
   <label for="weight-pop">Bevolkingsdichtheid:
     <input type="range" min="0" max="1" step="0.1" id="weight-pop" value="0.50" />
+    <span id="val-pop">0.50</span>
   </label>
+
+  <label>
+    <input type="checkbox" id="transparency-toggle" />
+    Raster transparanter
+  </label>
+
   <button id="update-btn" type="button">Update suitability index
     <div id="info-icon">i</div>
     <div id="info-text">De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.</div>
@@ -202,28 +220,20 @@
   });
 
   function getCenterCoords() {
-    if (window.innerWidth <= 768) {
-      return [52.10, 5.10];  // mobiel iets westelijker
-    } else {
-      return [52.09, 5.42];  // desktop
-    }
+    return window.innerWidth <= 768 ? [52.10, 5.10] : [52.09, 5.42];
   }
 
   const map = L.map('map', {
     zoomControl: false,
     minZoom: 11,
     maxZoom: 18,
-    maxBounds: [
-      [51.90, 4.75],
-      [52.28, 5.35]
-    ],
+    maxBounds: [[51.90, 4.75], [52.28, 5.35]],
     maxBoundsViscosity: 1.0,
     zoomSnap: 0.5,
     zoomDelta: 0.5
   }).setView(getCenterCoords(), 12);
-  
+
   map.setZoom(map.getZoom() - 0.5);
-  
   L.control.zoom({ position: 'topright' }).addTo(map);
   L.control.scale({ position: 'bottomright' }).addTo(map);
 
@@ -231,11 +241,10 @@
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
+  let layer_group;
+
   function getColor(score) {
-    return score > 6 ? '#1a9641' :
-           score > 4 ? '#a6d96a' :
-           score > 2 ? '#fdae61' :
-                       '#d7191c';
+    return score > 6 ? '#1a9641' : score > 4 ? '#a6d96a' : score > 2 ? '#fdae61' : '#d7191c';
   }
 
   function styleFeature(feature) {
@@ -243,13 +252,12 @@
       fillColor: getColor(feature.properties.MCA_score || 0),
       weight: 1,
       color: '#333',
-      fillOpacity: 0.7
+      fillOpacity: document.getElementById('transparency-toggle').checked ? 0.3 : 0.7
     };
   }
 
   function highlightFeature(e) {
-    const layer = e.target;
-    layer.setStyle({ weight: 2, color: '#666' });
+    e.target.setStyle({ weight: 2, color: '#666' });
   }
 
   function resetHighlight(e) {
@@ -257,14 +265,9 @@
   }
 
   function popFeature(feature, layer) {
-    layer.on({
-      mouseover: highlightFeature,
-      mouseout: resetHighlight
-    });
+    layer.on({ mouseover: highlightFeature, mouseout: resetHighlight });
     layer.bindPopup('Suitability index: ' + ((feature.properties.MCA_score || 0).toFixed(2)));
   }
-
-  let layer_group;
 
   fetch('data/gridlayer_mca_fitness.geojson')
     .then(res => res.json())
@@ -275,9 +278,7 @@
       }).addTo(map);
       updateScores();
     })
-    .catch(e => {
-      alert("Fout bij het laden van GeoJSON: " + e);
-    });
+    .catch(e => alert("Fout bij het laden van GeoJSON: " + e));
 
   function updateScores() {
     const w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
@@ -294,6 +295,8 @@
       layer.setStyle(styleFeature(layer.feature));
       layer.bindPopup('Suitability index: ' + p.MCA_score.toFixed(2));
     });
+
+    checkSum();
   }
 
   document.getElementById('update-btn').addEventListener('click', updateScores);
@@ -302,12 +305,53 @@
     document.getElementById('weight-ov').value = 0.20;
     document.getElementById('weight-fitness').value = 0.30;
     document.getElementById('weight-pop').value = 0.50;
+    ['ov', 'fitness', 'pop'].forEach(id => {
+      document.getElementById('val-' + id).textContent = document.getElementById('weight-' + id).value;
+    });
     updateScores();
+  });
+
+  ['ov', 'fitness', 'pop'].forEach(id => {
+    const slider = document.getElementById('weight-' + id);
+    const label = document.getElementById('val-' + id);
+    slider.addEventListener('input', () => {
+      label.textContent = parseFloat(slider.value).toFixed(2);
+      checkSum();
+    });
+  });
+
+  function checkSum() {
+    const w1 = parseFloat(document.getElementById('weight-fitness').value) || 0;
+    const w2 = parseFloat(document.getElementById('weight-ov').value) || 0;
+    const w3 = parseFloat(document.getElementById('weight-pop').value) || 0;
+    const total = w1 + w2 + w3;
+    const btn = document.getElementById('update-btn');
+
+    if (Math.abs(total - 1) > 0.01) {
+      btn.style.backgroundColor = 'crimson';
+      btn.textContent = 'Wegingen ≠ 1!';
+    } else {
+      btn.style.backgroundColor = '#333';
+      btn.textContent = 'Update suitability index';
+    }
+  }
+
+  document.getElementById('transparency-toggle').addEventListener('change', () => {
+    if (layer_group) layer_group.setStyle(styleFeature);
+  });
+
+  document.getElementById('toggle-panel-btn').addEventListener('click', () => {
+    const panel = document.getElementById('control-panel');
+    const btn = document.getElementById('toggle-panel-btn');
+    panel.classList.toggle('collapsed');
+    btn.textContent = panel.classList.contains('collapsed') ? 'Open menu ▼' : 'Sluit menu ▲';
   });
 
   window.addEventListener('resize', () => {
     map.setView(getCenterCoords(), 12);
   });
+
+  checkSum();
 </script>
 
 </body>
