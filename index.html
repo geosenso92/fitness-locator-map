@@ -1,15 +1,38 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum‑scale=1,width=device-width">
-  <link rel="stylesheet" href="css/leaflet.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width" />
+  <link rel="stylesheet" href="css/leaflet.css" />
   <style>
-    html, body, #map {
-      width: 100%;
+    html, body {
       height: 100%;
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
+      font-family: sans-serif;
+    }
+    #dashboard-frame {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      border: 2px solid #333;
+      box-sizing: border-box;
+    }
+    #title {
+      background-color: #2a9d8f;
+      color: white;
+      padding: 12px 20px;
+      font-size: 22px;
+      font-weight: 700;
+      user-select: none;
+    }
+    #main-content {
+      flex: 1;
+      display: flex;
+      position: relative;
+    }
+    #map {
+      flex: 1;
+      height: 100%;
     }
     .control-box {
       position: absolute;
@@ -20,37 +43,85 @@
       border-radius: 8px;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
       z-index: 1000;
-      font-family: sans-serif;
       font-size: 14px;
+      width: 180px;
     }
-    .control-box label {
-      display: block;
-      margin-bottom: 6px;
+    #legend {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 150px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 8px;
+      padding: 15px 12px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      font-size: 13px;
+      color: #333;
+      z-index: 1000;
+      user-select: none;
+    }
+    #legend h4 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-weight: 700;
+      font-size: 16px;
+    }
+    #legend .color-bar {
+      height: 20px;
+      border-radius: 5px;
+      background: linear-gradient(to right, 
+        #d7191c 0%, 
+        #fdae61 33%, 
+        #a6d96a 66%, 
+        #1a9641 100%);
+      margin-bottom: 8px;
+    }
+    #legend .labels {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 600;
     }
   </style>
   <title>Fitness MCA Dashboard</title>
 </head>
 <body>
-  <div id="map"></div>
-  <div class="control-box">
-    <label>OV (score_bus):
-      <input type="range" min="0" max="1" step="0.1" id="weight-ov" value="0.33">
-    </label>
-    <label>Fitness (score_fit):
-      <input type="range" min="0" max="1" step="0.1" id="weight-fitness" value="0.33">
-    </label>
-    <label>Bevolking (score_pop):
-      <input type="range" min="0" max="1" step="0.1" id="weight-pop" value="0.33">
-    </label>
-    <button onclick="updateScores()">Update MCA-score</button>
+  <div id="dashboard-frame">
+    <div id="title">Fitness MCA Dashboard</div>
+    <div id="main-content">
+      <div id="map"></div>
+
+      <div class="control-box">
+        <label>OV (score_bus):
+          <input type="range" min="0" max="1" step="0.1" id="weight-ov" value="0.33">
+        </label>
+        <label>Fitness (score_fit):
+          <input type="range" min="0" max="1" step="0.1" id="weight-fitness" value="0.33">
+        </label>
+        <label>Bevolking (score_pop):
+          <input type="range" min="0" max="1" step="0.1" id="weight-pop" value="0.33">
+        </label>
+        <button onclick="updateScores()">Update MCA-score</button>
+      </div>
+
+      <div id="legend">
+        <h4>MCA-score legenda</h4>
+        <div class="color-bar"></div>
+        <div class="labels">
+          <span>1</span><span>3.5</span><span>6.5</span><span>10</span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="js/leaflet.js"></script>
+  <script src="data/gridlayer_mca_fitness_1.js"></script>
   <script>
+    // Kaart initialisatie
     var map = L.map('map', { zoomControl: false }).setView([52.09, 5.12], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OSM contributors'
     }).addTo(map);
+    L.control.scale({ position: 'bottomright' }).addTo(map);
 
     // Hover highlight
     function highlightFeature(e) {
@@ -62,7 +133,7 @@
     }
     function popFeature(feature, layer) {
       layer.on({ mouseover: highlightFeature, mouseout: resetHighlight });
-      layer.bindPopup('MCA_score: ' + (feature.properties.MCA_score || 0).toFixed(2));
+      layer.bindPopup('MCA_score: ' + (feature.properties.MCA_score || '').toFixed(2));
     }
 
     // Kleurenschaal
@@ -81,25 +152,13 @@
       };
     }
 
-    var layer_group;
+    // GeoJSON-layer
+    var layer_group = L.geoJson(json_gridlayer_mca_fitness, {
+      style: styleFeature,
+      onEachFeature: popFeature
+    }).addTo(map);
 
-    // Laad de GeoJSON en voeg toe aan de kaart
-    fetch('data/gridlayer_mca_fitness.geojson')
-      .then(res => res.json())
-      .then(data => {
-        layer_group = L.geoJSON(data, {
-          style: styleFeature,
-          onEachFeature: popFeature
-        }).addTo(map);
-        updateScores();
-
-        // Event listeners voor sliders
-        ['weight-ov','weight-fitness','weight-pop'].forEach(id =>
-          document.getElementById(id).addEventListener('input', updateScores)
-        );
-      })
-      .catch(err => console.error('GeoJSON laden mislukt:', err));
-
+    // Recalculatie functie
     function updateScores() {
       var w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
       var w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
@@ -116,6 +175,12 @@
         layer.bindPopup('MCA_score: ' + p.MCA_score.toFixed(2));
       });
     }
+
+    // Event listeners en initiële aanroep
+    ['weight-ov','weight-fitness','weight-pop'].forEach(id =>
+      document.getElementById(id).addEventListener('input', updateScores)
+    ); 
+    updateScores();
   </script>
 </body>
 </html>
