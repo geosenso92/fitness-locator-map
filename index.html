@@ -46,47 +46,48 @@
       top: 90px;
       left: 10px;
       background: rgba(255,255,255,0.95);
-      padding: 12px 15px 20px 15px;
+      padding: 10px 12px 18px 12px;
       border-radius: 8px;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
       z-index: 1100;
-      width: 280px;
-      font-size: 13px;
+      width: 270px;
+      font-size: 12px;
       user-select: none;
-      transition: max-height 0.3s ease, padding 0.3s ease;
-      overflow: hidden;
-    }
-    .control-box.minimized {
-      max-height: 40px;
-      padding-top: 10px;
-      padding-bottom: 10px;
-      cursor: pointer;
-      user-select: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
     .control-box label {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 0;
       cursor: pointer;
     }
     .control-box label span {
       flex-shrink: 0;
-      margin-left: 10px;
-      width: 40px;
+      width: 35px;
       text-align: right;
       font-weight: 600;
+      user-select: none;
     }
     .control-box input[type=range] {
       flex-grow: 1;
       cursor: pointer;
-      margin-left: 10px;
+      height: 18px;
+      margin-left: 0;
+      margin-right: 4px;
     }
-    #reset-btn, #update-btn {
+    #transparency-label {
+      margin-top: 12px;
+      user-select: none;
+    }
+    #reset-btn, #update-btn, #toggle-control-btn {
       margin-top: 8px;
       width: 100%;
-      padding: 7px;
-      font-size: 14px;
+      padding: 6px;
+      font-size: 13px;
       background: #333;
       color: white;
       border: none;
@@ -120,19 +121,18 @@
       bottom: 100%;
       right: 0;
       margin-bottom: 8px;
-      width: 240px;
+      width: 230px;
       background: white;
       border: 1px solid #ccc;
-      padding: 10px 12px;
+      padding: 7px 8px;
       font-size: 12px;
-      border-radius: 6px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      border-radius: 4px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
       display: none;
-      z-index: 2000;
+      z-index: 1150;
       pointer-events: auto;
-      color: #222;
-      line-height: 1.3;
       user-select: none;
+      color: black;
       word-wrap: break-word;
     }
     .legend {
@@ -168,20 +168,6 @@
       display: flex;
       justify-content: space-between;
     }
-    #toggle-menu-btn {
-      position: absolute;
-      top: 90px;
-      left: 10px;
-      background: #333;
-      color: white;
-      padding: 6px 10px;
-      font-size: 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      user-select: none;
-      z-index: 1200;
-      display: none;
-    }
   </style>
   <title>Locatievinder Fitness Center</title>
 </head>
@@ -194,20 +180,21 @@
 
 <div class="control-box" id="control-box">
   <label for="weight-fitness">Nabijgelegen fitnesscentra:
-    <input type="range" min="0" max="100" step="1" id="weight-fitness" value="30" />
-    <span id="value-fitness">30%</span>
+    <input type="range" min="0" max="1" step="0.01" id="weight-fitness" value="0.30" />
+    <span id="percent-fitness">30%</span>
   </label>
   <label for="weight-ov">OV bereikbaarheid:
-    <input type="range" min="0" max="100" step="1" id="weight-ov" value="20" />
-    <span id="value-ov">20%</span>
+    <input type="range" min="0" max="1" step="0.01" id="weight-ov" value="0.20" />
+    <span id="percent-ov">20%</span>
   </label>
   <label for="weight-pop">Bevolkingsdichtheid:
-    <input type="range" min="0" max="100" step="1" id="weight-pop" value="50" />
-    <span id="value-pop">50%</span>
+    <input type="range" min="0" max="1" step="0.01" id="weight-pop" value="0.50" />
+    <span id="percent-pop">50%</span>
   </label>
-  <label for="transparency-slider">Raster transparantie:
-    <input type="range" min="0" max="100" step="1" id="transparency-slider" value="70" />
-    <span id="value-transparency">70%</span>
+
+  <label id="transparency-label" for="transparency-slider">Raster transparantie:
+    <input type="range" min="0" max="1" step="0.01" id="transparency-slider" value="0.7" />
+    <span id="percent-transparency">70%</span>
   </label>
 
   <button id="update-btn" type="button">Update suitability index
@@ -215,10 +202,9 @@
     <div id="info-text">De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.</div>
   </button>
   <button id="reset-btn" type="button">Reset</button>
-  <button id="toggle-control-btn" type="button" style="margin-top: 8px; width: 100%; background: #666;">Sluit menu</button>
 </div>
 
-<button id="toggle-menu-btn">Open locatievinder menu</button>
+<button id="toggle-control-btn" style="position: absolute; top: 90px; left: 10px; z-index: 1150; font-size: 13px; padding: 6px; border-radius: 4px; border: none; cursor: pointer; background: #333; color: white; user-select: none; display: none;">Open locatievinder menu</button>
 
 <div id="map"></div>
 
@@ -249,19 +235,46 @@
   });
 
   const controlBox = document.getElementById('control-box');
-  const toggleControlBtn = document.getElementById('toggle-control-btn');
-  const toggleMenuBtn = document.getElementById('toggle-menu-btn');
+  const toggleBtn = document.getElementById('toggle-control-btn');
 
-  toggleControlBtn.addEventListener('click', () => {
-    controlBox.style.display = 'none';
-    toggleMenuBtn.style.display = 'block';
-  });
-
-  toggleMenuBtn.addEventListener('click', () => {
+  toggleBtn.addEventListener('click', () => {
     controlBox.style.display = 'block';
-    toggleMenuBtn.style.display = 'none';
+    toggleBtn.style.display = 'none';
   });
 
+  function toggleControlBox() {
+    if (controlBox.style.display === 'none' || controlBox.style.display === '') {
+      controlBox.style.display = 'block';
+      toggleBtn.style.display = 'none';
+    } else {
+      controlBox.style.display = 'none';
+      toggleBtn.style.display = 'block';
+    }
+  }
+
+  // Voeg sluit knop toe aan control-box (onderaan)
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Sluit menu';
+  closeBtn.id = 'close-menu-btn';
+  closeBtn.style.marginTop = '8px';
+  closeBtn.style.width = '100%';
+  closeBtn.style.padding = '6px';
+  closeBtn.style.fontSize = '13px';
+  closeBtn.style.background = '#555';
+  closeBtn.style.color = 'white';
+  closeBtn.style.border = 'none';
+  closeBtn.style.borderRadius = '4px';
+  closeBtn.style.cursor = 'pointer';
+  closeBtn.style.userSelect = 'none';
+
+  closeBtn.addEventListener('click', toggleControlBox);
+  controlBox.appendChild(closeBtn);
+
+  // Start met control-box zichtbaar
+  controlBox.style.display = 'block';
+  toggleBtn.style.display = 'none';
+
+  // Map en lagen
   function getCenterCoords() {
     if (window.innerWidth <= 768) {
       return [52.10, 5.10];  // mobiel iets westelijker
@@ -282,15 +295,17 @@
     zoomSnap: 0.5,
     zoomDelta: 0.5
   }).setView(getCenterCoords(), 12);
-  
+
   map.setZoom(map.getZoom() - 0.5);
-  
+
   L.control.zoom({ position: 'topright' }).addTo(map);
   L.control.scale({ position: 'bottomright' }).addTo(map);
 
-  const baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
+
+  let layer_group;
 
   function getColor(score) {
     return score > 6 ? '#1a9641' :
@@ -304,7 +319,7 @@
       fillColor: getColor(feature.properties.MCA_score || 0),
       weight: 1,
       color: '#333',
-      fillOpacity: currentTransparency / 100 // gebruik transparantie
+      fillOpacity: currentTransparency
     };
   }
 
@@ -325,9 +340,6 @@
     layer.bindPopup('Suitability index: ' + ((feature.properties.MCA_score || 0).toFixed(2)));
   }
 
-  let layer_group;
-  let currentTransparency = 70; // startwaarde transparantie
-
   fetch('data/gridlayer_mca_fitness.geojson')
     .then(res => res.json())
     .then(data => {
@@ -341,97 +353,115 @@
       alert("Fout bij het laden van GeoJSON: " + e);
     });
 
-  // Update wegingen en normalisatie
-  function normalizeWeights(weights) {
-    const sum = weights.reduce((a,b) => a + b, 0);
-    if (sum === 0) return weights.map(() => 1 / weights.length); // verdeel gelijk bij 0 totaal
-    return weights.map(w => w / sum);
-  }
+  // Sliders en percentages live update
+  const sliders = ['weight-fitness', 'weight-ov', 'weight-pop'];
+  const percentSpans = {
+    'weight-fitness': document.getElementById('percent-fitness'),
+    'weight-ov': document.getElementById('percent-ov'),
+    'weight-pop': document.getElementById('percent-pop')
+  };
 
-  function updateSlidersAndValues(normalizedWeights) {
-    // Zet sliders en tekst terug in percentages, afgerond
-    document.getElementById('weight-ov').value = Math.round(normalizedWeights[0] * 100);
-    document.getElementById('weight-fitness').value = Math.round(normalizedWeights[1] * 100);
-    document.getElementById('weight-pop').value = Math.round(normalizedWeights[2] * 100);
-    document.getElementById('value-ov').textContent = Math.round(normalizedWeights[0] * 100) + '%';
-    document.getElementById('value-fitness').textContent = Math.round(normalizedWeights[1] * 100) + '%';
-    document.getElementById('value-pop').textContent = Math.round(normalizedWeights[2] * 100) + '%';
-  }
-
-  function updateScores() {
-    // Lees huidige waarden (percentages)
-    let w_ov = parseInt(document.getElementById('weight-ov').value, 10) || 0;
-    let w_fit = parseInt(document.getElementById('weight-fitness').value, 10) || 0;
-    let w_pop = parseInt(document.getElementById('weight-pop').value, 10) || 0;
-
-    // Normaliseer naar som = 1
-    let normalized = normalizeWeights([w_ov, w_fit, w_pop]);
-
-    // Update sliders en labels met genormaliseerde waarden
-    updateSlidersAndValues(normalized);
-
-    // Bereken MCA scores en update layer styles
-    layer_group.eachLayer(layer => {
-      const p = layer.feature.properties;
-      const ov = parseFloat(p.score_bus) || 0;
-      const fit = parseFloat(p.score_fit) || 0;
-      const pop = parseFloat(p.score_pop) || 0;
-      p.MCA_score = normalized[0] * ov + normalized[1] * fit + normalized[2] * pop;
-
-      layer.setStyle(styleFeature(layer.feature));
-      layer.bindPopup('Suitability index: ' + p.MCA_score.toFixed(2));
+  function updatePercentages() {
+    sliders.forEach(id => {
+      const val = parseFloat(document.getElementById(id).value) || 0;
+      percentSpans[id].textContent = Math.round(val * 100) + '%';
     });
   }
 
-  // Update transparantie op kaart
-  function updateTransparency() {
-    currentTransparency = parseInt(document.getElementById('transparency-slider').value, 10) || 70;
-    document.getElementById('value-transparency').textContent = currentTransparency + '%';
-
-    if (!layer_group) return;
-    layer_group.eachLayer(layer => {
-      const style = layer.options;
-      style.fillOpacity = currentTransparency / 100;
-      layer.setStyle(style);
-    });
-  }
-
-  // Live update slider labels als je schuift
-  ['weight-ov','weight-fitness','weight-pop','transparency-slider'].forEach(id => {
-    document.getElementById(id).addEventListener('input', e => {
-      const val = e.target.value;
-      document.getElementById('value-' + id.split('-')[1]).textContent = val + '%';
+  sliders.forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      updatePercentages();
+      checkSumAndNormalize(false);
     });
   });
 
-  // Update bij klikken op update-knop (ook normalisatie)
+  // Transparantie slider
+  const transparencySlider = document.getElementById('transparency-slider');
+  const percentTransparency = document.getElementById('percent-transparency');
+  let currentTransparency = parseFloat(transparencySlider.value);
+
+  transparencySlider.addEventListener('input', () => {
+    currentTransparency = parseFloat(transparencySlider.value);
+    percentTransparency.textContent = Math.round(currentTransparency * 100) + '%';
+    updateTransparency();
+  });
+
+  function updateTransparency() {
+    if (!layer_group) return;
+    layer_group.eachLayer(layer => {
+      layer.setStyle({ fillOpacity: currentTransparency });
+    });
+  }
+
+  // Som check & normalisatie
+  function checkSumAndNormalize(autoNormalize = true) {
+    let sum = 0;
+    sliders.forEach(id => {
+      sum += parseFloat(document.getElementById(id).value) || 0;
+    });
+
+    const sumDisplay = sum.toFixed(2);
+
+    if (Math.abs(sum - 1) > 0.01) {
+      // Warn user
+      if (autoNormalize) {
+        // Normaal de waardes automatisch
+        sliders.forEach(id => {
+          let val = parseFloat(document.getElementById(id).value) || 0;
+          val = val / sum;
+          document.getElementById(id).value = val.toFixed(4);
+        });
+        updatePercentages();
+      }
+    }
+  }
+
+  checkSumAndNormalize(true);
+
+  // MCA score update
+  function updateScores() {
+    if (!layer_group) return;
+    // Simuleer update, want eigenlijke berekening op server?
+    // Hier gewoon random aanpassen om demo te tonen
+    layer_group.eachLayer(layer => {
+      const props = layer.feature.properties;
+      const fWeight = parseFloat(document.getElementById('weight-fitness').value);
+      const ovWeight = parseFloat(document.getElementById('weight-ov').value);
+      const popWeight = parseFloat(document.getElementById('weight-pop').value);
+      // Een simpele gewogen score uit properties
+      const score =
+        (props.fitnessScore || 0) * fWeight +
+        (props.ovScore || 0) * ovWeight +
+        (props.popScore || 0) * popWeight;
+
+      props.MCA_score = score;
+      layer.setStyle({
+        fillColor: getColor(score),
+        fillOpacity: currentTransparency
+      });
+    });
+  }
+
   document.getElementById('update-btn').addEventListener('click', () => {
     updateScores();
   });
 
-  // Reset knop terug naar default waarden
   document.getElementById('reset-btn').addEventListener('click', () => {
-    document.getElementById('weight-fitness').value = 30;
-    document.getElementById('weight-ov').value = 20;
-    document.getElementById('weight-pop').value = 50;
-    document.getElementById('transparency-slider').value = 70;
-    document.getElementById('value-fitness').textContent = '30%';
-    document.getElementById('value-ov').textContent = '20%';
-    document.getElementById('value-pop').textContent = '50%';
-    document.getElementById('value-transparency').textContent = '70%';
-
+    // Reset naar standaardwaarden
+    document.getElementById('weight-fitness').value = 0.3;
+    document.getElementById('weight-ov').value = 0.2;
+    document.getElementById('weight-pop').value = 0.5;
+    transparencySlider.value = 0.7;
+    currentTransparency = 0.7;
+    updatePercentages();
+    percentTransparency.textContent = '70%';
     updateTransparency();
     updateScores();
   });
 
-  // Transparantie slider update live
-  document.getElementById('transparency-slider').addEventListener('input', () => {
-    updateTransparency();
-  });
-
-  // Startwaarden instellen
+  // Init
+  updatePercentages();
   updateTransparency();
-
 </script>
 
 </body>
