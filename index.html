@@ -5,7 +5,6 @@
   <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width" />
   <link rel="stylesheet" href="css/leaflet.css" />
   <link rel="icon" href="data/1-aafea2ea.ico" type="image/ico" />
-  <title>Locatievinder Fitness Center</title>
   <style>
     html, body {
       width: 100%; height: 100%; margin: 0; padding: 0;
@@ -44,29 +43,44 @@
     }
     .control-box {
       position: absolute;
-      top: 130px;
+      top: 90px;
       left: 10px;
       background: rgba(255,255,255,0.95);
       padding: 12px 15px 20px 15px;
       border-radius: 8px;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
       z-index: 1100;
-      width: 250px;
+      width: 280px;
       font-size: 13px;
+      user-select: none;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+      overflow: hidden;
+    }
+    .control-box.minimized {
+      max-height: 40px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      cursor: pointer;
       user-select: none;
     }
     .control-box label {
-      display: block;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 10px;
       cursor: pointer;
     }
-    .control-box input[type=range] {
-      width: 100%;
-      cursor: pointer;
+    .control-box label span {
+      flex-shrink: 0;
+      margin-left: 10px;
+      width: 40px;
+      text-align: right;
+      font-weight: 600;
     }
-    .slider-value {
-      float: right;
-      font-weight: bold;
+    .control-box input[type=range] {
+      flex-grow: 1;
+      cursor: pointer;
+      margin-left: 10px;
     }
     #reset-btn, #update-btn {
       margin-top: 8px;
@@ -110,7 +124,7 @@
       background: white;
       border: 1px solid #ccc;
       padding: 10px 12px;
-      font-size: 11px;
+      font-size: 12px;
       border-radius: 6px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.25);
       display: none;
@@ -154,24 +168,22 @@
       display: flex;
       justify-content: space-between;
     }
-    #toggle-menu {
+    #toggle-menu-btn {
       position: absolute;
       top: 90px;
       left: 10px;
-      background: #0077cc;
+      background: #333;
       color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 4px;
-      z-index: 1300;
+      padding: 6px 10px;
+      font-size: 14px;
+      border-radius: 6px;
       cursor: pointer;
-    }
-    #weight-check {
-      margin-top: 6px;
-      color: red;
-      font-size: 12px;
+      user-select: none;
+      z-index: 1200;
+      display: none;
     }
   </style>
+  <title>Locatievinder Fitness Center</title>
 </head>
 <body>
 
@@ -180,32 +192,33 @@
   <div id="page-title">Locatievinder Fitness Center</div>
 </div>
 
-<button id="toggle-menu">Sluit menu</button>
-
 <div class="control-box" id="control-box">
   <label for="weight-fitness">Nabijgelegen fitnesscentra:
-    <span class="slider-value" id="val-fitness">30%</span>
-    <input type="range" min="0" max="100" step="5" id="weight-fitness" value="30" />
+    <input type="range" min="0" max="100" step="1" id="weight-fitness" value="30" />
+    <span id="value-fitness">30%</span>
   </label>
   <label for="weight-ov">OV bereikbaarheid:
-    <span class="slider-value" id="val-ov">20%</span>
-    <input type="range" min="0" max="100" step="5" id="weight-ov" value="20" />
+    <input type="range" min="0" max="100" step="1" id="weight-ov" value="20" />
+    <span id="value-ov">20%</span>
   </label>
   <label for="weight-pop">Bevolkingsdichtheid:
-    <span class="slider-value" id="val-pop">50%</span>
-    <input type="range" min="0" max="100" step="5" id="weight-pop" value="50" />
+    <input type="range" min="0" max="100" step="1" id="weight-pop" value="50" />
+    <span id="value-pop">50%</span>
   </label>
-  <label for="opacity">Raster transparantie:
-    <span class="slider-value" id="val-opacity">70%</span>
-    <input type="range" min="0" max="100" step="5" id="opacity" value="70" />
+  <label for="transparency-slider">Raster transparantie:
+    <input type="range" min="0" max="100" step="1" id="transparency-slider" value="70" />
+    <span id="value-transparency">70%</span>
   </label>
-  <div id="weight-check"></div>
+
   <button id="update-btn" type="button">Update suitability index
     <div id="info-icon">i</div>
     <div id="info-text">De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.</div>
   </button>
   <button id="reset-btn" type="button">Reset</button>
+  <button id="toggle-control-btn" type="button" style="margin-top: 8px; width: 100%; background: #666;">Sluit menu</button>
 </div>
+
+<button id="toggle-menu-btn">Open locatievinder menu</button>
 
 <div id="map"></div>
 
@@ -235,38 +248,49 @@
     }
   });
 
+  const controlBox = document.getElementById('control-box');
+  const toggleControlBtn = document.getElementById('toggle-control-btn');
+  const toggleMenuBtn = document.getElementById('toggle-menu-btn');
+
+  toggleControlBtn.addEventListener('click', () => {
+    controlBox.style.display = 'none';
+    toggleMenuBtn.style.display = 'block';
+  });
+
+  toggleMenuBtn.addEventListener('click', () => {
+    controlBox.style.display = 'block';
+    toggleMenuBtn.style.display = 'none';
+  });
+
   function getCenterCoords() {
-    return window.innerWidth <= 768 ? [52.10, 5.10] : [52.09, 5.42];
+    if (window.innerWidth <= 768) {
+      return [52.10, 5.10];  // mobiel iets westelijker
+    } else {
+      return [52.09, 5.42];  // desktop
+    }
   }
 
   const map = L.map('map', {
     zoomControl: false,
     minZoom: 11,
     maxZoom: 18,
-    maxBounds: [[51.90, 4.75], [52.28, 5.35]],
+    maxBounds: [
+      [51.90, 4.75],
+      [52.28, 5.35]
+    ],
     maxBoundsViscosity: 1.0,
     zoomSnap: 0.5,
     zoomDelta: 0.5
-  }).setView(getCenterCoords(), 11.5);
-
+  }).setView(getCenterCoords(), 12);
+  
+  map.setZoom(map.getZoom() - 0.5);
+  
   L.control.zoom({ position: 'topright' }).addTo(map);
   L.control.scale({ position: 'bottomright' }).addTo(map);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  const baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
-
-  let layer_group;
-
-  fetch('data/gridlayer_mca_fitness.geojson')
-    .then(res => res.json())
-    .then(data => {
-      layer_group = L.geoJSON(data, {
-        style: styleFeature,
-        onEachFeature: popFeature
-      }).addTo(map);
-      updateScores();
-    });
 
   function getColor(score) {
     return score > 6 ? '#1a9641' :
@@ -280,84 +304,134 @@
       fillColor: getColor(feature.properties.MCA_score || 0),
       weight: 1,
       color: '#333',
-      fillOpacity: parseFloat(document.getElementById('opacity').value) / 100
+      fillOpacity: currentTransparency / 100 // gebruik transparantie
     };
   }
 
-  function popFeature(feature, layer) {
-    layer.on({ mouseover: highlightFeature, mouseout: resetHighlight });
-    layer.bindPopup('Suitability index: ' + ((feature.properties.MCA_score || 0).toFixed(2)));
-  }
-
   function highlightFeature(e) {
-    e.target.setStyle({ weight: 2, color: '#666' });
+    const layer = e.target;
+    layer.setStyle({ weight: 2, color: '#666' });
   }
 
   function resetHighlight(e) {
     layer_group.resetStyle(e.target);
   }
 
+  function popFeature(feature, layer) {
+    layer.on({
+      mouseover: highlightFeature,
+      mouseout: resetHighlight
+    });
+    layer.bindPopup('Suitability index: ' + ((feature.properties.MCA_score || 0).toFixed(2)));
+  }
+
+  let layer_group;
+  let currentTransparency = 70; // startwaarde transparantie
+
+  fetch('data/gridlayer_mca_fitness.geojson')
+    .then(res => res.json())
+    .then(data => {
+      layer_group = L.geoJSON(data, {
+        style: styleFeature,
+        onEachFeature: popFeature
+      }).addTo(map);
+      updateScores();
+    })
+    .catch(e => {
+      alert("Fout bij het laden van GeoJSON: " + e);
+    });
+
+  // Update wegingen en normalisatie
+  function normalizeWeights(weights) {
+    const sum = weights.reduce((a,b) => a + b, 0);
+    if (sum === 0) return weights.map(() => 1 / weights.length); // verdeel gelijk bij 0 totaal
+    return weights.map(w => w / sum);
+  }
+
+  function updateSlidersAndValues(normalizedWeights) {
+    // Zet sliders en tekst terug in percentages, afgerond
+    document.getElementById('weight-ov').value = Math.round(normalizedWeights[0] * 100);
+    document.getElementById('weight-fitness').value = Math.round(normalizedWeights[1] * 100);
+    document.getElementById('weight-pop').value = Math.round(normalizedWeights[2] * 100);
+    document.getElementById('value-ov').textContent = Math.round(normalizedWeights[0] * 100) + '%';
+    document.getElementById('value-fitness').textContent = Math.round(normalizedWeights[1] * 100) + '%';
+    document.getElementById('value-pop').textContent = Math.round(normalizedWeights[2] * 100) + '%';
+  }
+
   function updateScores() {
-    const w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
-    const w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
-    const w_pop = parseFloat(document.getElementById('weight-pop').value) || 0;
-    const sum = w_ov + w_fit + w_pop;
+    // Lees huidige waarden (percentages)
+    let w_ov = parseInt(document.getElementById('weight-ov').value, 10) || 0;
+    let w_fit = parseInt(document.getElementById('weight-fitness').value, 10) || 0;
+    let w_pop = parseInt(document.getElementById('weight-pop').value, 10) || 0;
 
-    document.getElementById('weight-check').textContent = sum === 100 ? '' : 'Let op: som wegingen ≠ 100%';
+    // Normaliseer naar som = 1
+    let normalized = normalizeWeights([w_ov, w_fit, w_pop]);
 
+    // Update sliders en labels met genormaliseerde waarden
+    updateSlidersAndValues(normalized);
+
+    // Bereken MCA scores en update layer styles
     layer_group.eachLayer(layer => {
       const p = layer.feature.properties;
       const ov = parseFloat(p.score_bus) || 0;
       const fit = parseFloat(p.score_fit) || 0;
       const pop = parseFloat(p.score_pop) || 0;
-      p.MCA_score = (w_ov * ov + w_fit * fit + w_pop * pop) / 100;
+      p.MCA_score = normalized[0] * ov + normalized[1] * fit + normalized[2] * pop;
 
       layer.setStyle(styleFeature(layer.feature));
       layer.bindPopup('Suitability index: ' + p.MCA_score.toFixed(2));
     });
   }
 
-  function updateSliderLabels() {
-    document.getElementById('val-ov').textContent = document.getElementById('weight-ov').value + '%';
-    document.getElementById('val-fitness').textContent = document.getElementById('weight-fitness').value + '%';
-    document.getElementById('val-pop').textContent = document.getElementById('weight-pop').value + '%';
-    document.getElementById('val-opacity').textContent = document.getElementById('opacity').value + '%';
+  // Update transparantie op kaart
+  function updateTransparency() {
+    currentTransparency = parseInt(document.getElementById('transparency-slider').value, 10) || 70;
+    document.getElementById('value-transparency').textContent = currentTransparency + '%';
+
+    if (!layer_group) return;
+    layer_group.eachLayer(layer => {
+      const style = layer.options;
+      style.fillOpacity = currentTransparency / 100;
+      layer.setStyle(style);
+    });
   }
 
-  ['weight-ov', 'weight-fitness', 'weight-pop', 'opacity'].forEach(id => {
-    document.getElementById(id).addEventListener('input', () => {
-      updateSliderLabels();
-      updateScores();
+  // Live update slider labels als je schuift
+  ['weight-ov','weight-fitness','weight-pop','transparency-slider'].forEach(id => {
+    document.getElementById(id).addEventListener('input', e => {
+      const val = e.target.value;
+      document.getElementById('value-' + id.split('-')[1]).textContent = val + '%';
     });
   });
 
-  document.getElementById('update-btn').addEventListener('click', updateScores);
-
-  document.getElementById('reset-btn').addEventListener('click', () => {
-    document.getElementById('weight-ov').value = 20;
-    document.getElementById('weight-fitness').value = 30;
-    document.getElementById('weight-pop').value = 50;
-    document.getElementById('opacity').value = 70;
-    updateSliderLabels();
+  // Update bij klikken op update-knop (ook normalisatie)
+  document.getElementById('update-btn').addEventListener('click', () => {
     updateScores();
   });
 
-  document.getElementById('toggle-menu').addEventListener('click', () => {
-    const box = document.getElementById('control-box');
-    if (box.style.display === 'none') {
-      box.style.display = 'block';
-      document.getElementById('toggle-menu').textContent = 'Sluit menu';
-    } else {
-      box.style.display = 'none';
-      document.getElementById('toggle-menu').textContent = 'Open locatievinder menu';
-    }
+  // Reset knop terug naar default waarden
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    document.getElementById('weight-fitness').value = 30;
+    document.getElementById('weight-ov').value = 20;
+    document.getElementById('weight-pop').value = 50;
+    document.getElementById('transparency-slider').value = 70;
+    document.getElementById('value-fitness').textContent = '30%';
+    document.getElementById('value-ov').textContent = '20%';
+    document.getElementById('value-pop').textContent = '50%';
+    document.getElementById('value-transparency').textContent = '70%';
+
+    updateTransparency();
+    updateScores();
   });
 
-  updateSliderLabels();
-
-  window.addEventListener('resize', () => {
-    map.setView(getCenterCoords(), 12);
+  // Transparantie slider update live
+  document.getElementById('transparency-slider').addEventListener('input', () => {
+    updateTransparency();
   });
+
+  // Startwaarden instellen
+  updateTransparency();
+
 </script>
 
 </body>
