@@ -16,7 +16,7 @@
       position: absolute;
       top: 0; left: 0; right: 0;
       height: 80px;
-      background: transparent;
+      background: white; /* aangepast van transparent naar white */
       display: flex;
       align-items: center;
       padding: 0 15px;
@@ -148,13 +148,13 @@
       justify-content: space-between;
     }
   </style>
-  <title>GeoSenso: Locatievinder Fitness Center</title>
+  <title>Locatievinder Fitness Center</title>
 </head>
 <body>
 
 <div id="header-container">
   <img id="logo" src="data/NewLogo21.png" alt="Logo" />
-  <div id="page-title">GeoSenso: Locatievinder Fitness Center</div>
+  <div id="page-title">Locatievinder Fitness Center</div>
 </div>
 
 <div class="control-box">
@@ -202,17 +202,16 @@
     }
   });
 
-  // Kaart initialisatie
   const map = L.map('map', {
-  zoomControl: false,
-  minZoom: 11,
-  maxZoom: 18,
-  maxBounds: [
-    [51.90, 4.75],
-    [52.28, 5.35]
-  ],
-  maxBoundsViscosity: 1.0
-}).setView([52.09, 5.42], 12); // Gemeente Utrecht
+    zoomControl: false,
+    minZoom: 11,
+    maxZoom: 18,
+    maxBounds: [
+      [51.90, 4.75],
+      [52.28, 5.35]
+    ],
+    maxBoundsViscosity: 1.0
+  }).setView([52.09, 5.42], 12); // Gemeente Utrecht
 
   L.control.zoom({ position: 'topright' }).addTo(map);
   L.control.scale({ position: 'bottomright' }).addTo(map);
