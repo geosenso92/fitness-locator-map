@@ -2,8 +2,7 @@
 <html lang="nl">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
-  <title>Optimale locatie voor fitnesscentra binnen de Gemeente Utrecht</title>
+  <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum‑scale=1,width=device-width">
   <link rel="stylesheet" href="css/leaflet.css">
   <style>
     html, body, #map {
@@ -12,91 +11,75 @@
       margin: 0;
       padding: 0;
     }
-    h1.page-title {
+    .title-box {
       position: absolute;
       top: 10px;
       left: 50%;
       transform: translateX(-50%);
-      font-family: sans-serif;
       background: rgba(255,255,255,0.95);
-      padding: 8px 16px;
-      border-radius: 8px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.2);
-      font-size: 18px;
-      z-index: 1100;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-family: sans-serif;
+      font-size: 20px;
+      font-weight: bold;
+      box-shadow: 0 0 8px rgba(0,0,0,0.2);
+      z-index: 1000;
     }
-    .control-box {
+    .logo-box {
       position: absolute;
       top: 60px;
       left: 10px;
+      z-index: 1000;
+    }
+    .logo-box img {
+      width: 100px;
+      opacity: 0.85;
+    }
+    .control-box {
+      position: absolute;
+      top: 170px;
+      left: 10px;
       background: rgba(255,255,255,0.95);
-      padding: 12px;
-      border-radius: 10px;
-      box-shadow: 0 0 6px rgba(0,0,0,0.3);
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
       z-index: 1000;
       font-family: sans-serif;
       font-size: 14px;
+      width: 220px;
     }
     .control-box label {
       display: block;
       margin-bottom: 8px;
-      font-weight: bold;
-    }
-    .control-box input[type="range"] {
-      width: 100%;
-      margin-bottom: 10px;
-    }
-    .button-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-top: 10px;
-    }
-    .control-box button {
-      flex: 1;
-      padding: 6px 10px;
-      font-size: 14px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .control-box button:hover {
-      background-color: #45a049;
     }
     .info-icon {
-      position: relative;
-      background-color: #666;
-      color: white;
-      font-size: 11px;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      text-align: center;
-      line-height: 18px;
+      float: right;
       cursor: pointer;
-      user-select: none;
-      flex-shrink: 0;
+      background: #000;
+      color: #fff;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      text-align: center;
+      font-size: 10px;
+      line-height: 16px;
+      margin-left: 8px;
+      position: relative;
     }
-    .tooltip {
+    .info-text {
       display: none;
       position: absolute;
-      top: -65px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.85);
+      top: 25px;
+      right: 0;
+      width: 200px;
+      background: #333;
       color: #fff;
-      padding: 6px 10px;
-      border-radius: 4px;
       font-size: 11px;
-      max-width: 200px;
-      text-align: center;
-      white-space: normal;
-      z-index: 1200;
+      padding: 8px;
+      border-radius: 5px;
+      z-index: 1001;
     }
-    .tooltip.visible {
+    .info-icon:hover .info-text {
       display: block;
     }
     .legend {
@@ -105,83 +88,79 @@
       left: 10px;
       background: rgba(255,255,255,0.95);
       padding: 10px;
-      font-family: sans-serif;
       font-size: 12px;
-      border-radius: 8px;
-      box-shadow: 0 0 4px rgba(0,0,0,0.3);
+      font-family: sans-serif;
       line-height: 18px;
+      border-radius: 6px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.3);
       z-index: 1000;
     }
-    .legend-title {
+    .legend .title {
       font-weight: bold;
-      margin-bottom: 6px;
+      margin-bottom: 5px;
     }
-    .legend-scale {
-      height: 10px;
-      background: linear-gradient(to right, #d7191c, #fdae61, #a6d96a, #1a9641);
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    .legend-labels {
+    .legend .scale {
       display: flex;
-      justify-content: space-between;
-      font-size: 11px;
+      height: 10px;
+      margin-top: 5px;
+      background: linear-gradient(to right, #d7191c, #fdae61, #a6d96a, #1a9641);
     }
   </style>
+  <title>Optimale locatie voor fitnesscentra binnen de Gemeente Utrecht</title>
 </head>
 <body>
-  <h1 class="page-title">Optimale locatie voor fitnesscentra binnen de Gemeente Utrecht</h1>
   <div id="map"></div>
 
+  <div class="title-box">
+    Optimale locatie voor fitnesscentra binnen de Gemeente Utrecht
+  </div>
+
+  <div class="logo-box">
+    <img src="fitness-locator-map/NewLogo21.png" alt="Logo">
+  </div>
+
   <div class="control-box">
-    <label>OV bereikbaarheid</label>
-    <input type="range" min="0" max="1" step="0.1" id="weight-ov" value="0.33">
-
-    <label>Nabijgelegen fitnesscentra</label>
-    <input type="range" min="0" max="1" step="0.1" id="weight-fitness" value="0.33">
-
-    <label>Bevolkingsdichtheid</label>
-    <input type="range" min="0" max="1" step="0.1" id="weight-pop" value="0.33">
-
-    <div class="button-container">
-      <button onclick="updateScores()">Update suitability index</button>
-      <div class="info-icon" onclick="toggleTooltip()">i
-        <div id="tooltip" class="tooltip">
+    <label>OV bereikbaarheid:
+      <input type="range" min="0" max="1" step="0.1" id="weight-ov" value="0.33">
+    </label>
+    <label>Nabijgelegen fitnesscentra:
+      <input type="range" min="0" max="1" step="0.1" id="weight-fitness" value="0.33">
+    </label>
+    <label>Bevolkingsdichtheid:
+      <input type="range" min="0" max="1" step="0.1" id="weight-pop" value="0.33">
+    </label>
+    <button onclick="updateScores()">
+      Update suitability index
+      <span class="info-icon">i
+        <span class="info-text">
           De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.
-        </div>
-      </div>
-    </div>
+        </span>
+      </span>
+    </button>
   </div>
 
   <div class="legend">
-    <div class="legend-title">Suitability index</div>
-    <div class="legend-scale"></div>
-    <div class="legend-labels">
-      <span>1</span><span>5</span><span>10</span>
-    </div>
+    <div class="title">Suitability index</div>
+    <div class="scale"></div>
+    <div>Laag (1) — Hoog (10)</div>
   </div>
 
   <script src="js/leaflet.js"></script>
   <script>
-    var map = L.map('map').setView([52.09, 5.12], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OSM contributors'
-    }).addTo(map);
+    var map = L.map('map', { zoomControl: false }).setView([52.09, 5.12], 12);
+    L.control.zoom({ position: 'topright' }).addTo(map);
     L.control.scale({ position: 'bottomright' }).addTo(map);
 
     function highlightFeature(e) {
       var layer = e.target;
       layer.setStyle({ weight: 2, color: '#666' });
     }
-
     function resetHighlight(e) {
       layer_group.resetStyle(e.target);
     }
-
     function popFeature(feature, layer) {
       layer.on({ mouseover: highlightFeature, mouseout: resetHighlight });
-      var score = (feature.properties.MCA_score || 0).toFixed(2);
-      layer.bindPopup('Suitability index: ' + score);
+      layer.bindPopup('Suitability index: ' + (feature.properties.MCA_score || '').toFixed(2));
     }
 
     function getColor(score) {
@@ -190,7 +169,6 @@
              score > 2 ? '#fdae61' :
                          '#d7191c';
     }
-
     function styleFeature(feature) {
       return {
         fillColor: getColor(feature.properties.MCA_score || 0),
@@ -232,11 +210,6 @@
     ['weight-ov','weight-fitness','weight-pop'].forEach(id =>
       document.getElementById(id).addEventListener('input', updateScores)
     );
-
-    function toggleTooltip() {
-      const tooltip = document.getElementById('tooltip');
-      tooltip.classList.toggle('visible');
-    }
   </script>
 </body>
 </html>
