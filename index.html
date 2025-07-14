@@ -202,6 +202,15 @@
     }
   });
 
+  // Functie om de juiste center-coördinaten te bepalen
+  function getCenterCoords() {
+    if (window.innerWidth <= 768) {
+      return [52.10, 5.15];  // mobiel: iets meer westelijk (aanpassen indien nodig)
+    } else {
+      return [52.09, 5.42];  // desktop
+    }
+  }
+
   const map = L.map('map', {
     zoomControl: false,
     minZoom: 11,
@@ -211,8 +220,9 @@
       [52.28, 5.35]
     ],
     maxBoundsViscosity: 1.0
-  }).setView([52.09, 5.42], 12); // Gemeente Utrecht
+  }).setView(getCenterCoords(), 12);
 
+  // Zoom- en schaalcontrolen toevoegen
   L.control.zoom({ position: 'topright' }).addTo(map);
   L.control.scale({ position: 'bottomright' }).addTo(map);
 
@@ -292,6 +302,11 @@
     document.getElementById('weight-fitness').value = 0.30;
     document.getElementById('weight-pop').value = 0.50;
     updateScores();
+  });
+
+  // Bij vensterresizen de kaart opnieuw centreren
+  window.addEventListener('resize', () => {
+    map.setView(getCenterCoords(), 12);
   });
 </script>
 
