@@ -46,28 +46,27 @@
       top: 90px;
       left: 10px;
       background: rgba(255,255,255,0.95);
-      padding: 10px 12px 18px 12px;
+      padding: 15px 15px 20px 15px;
       border-radius: 8px;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
       z-index: 1100;
-      width: 270px;
+      width: 280px;
       font-size: 12px;
       user-select: none;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 18px;
     }
     .control-box label {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
+      gap: 12px;
       margin-bottom: 0;
-      cursor: pointer;
     }
     .control-box label span {
       flex-shrink: 0;
-      width: 35px;
+      width: 38px;
       text-align: right;
       font-weight: 600;
       user-select: none;
@@ -77,26 +76,26 @@
       cursor: pointer;
       height: 18px;
       margin-left: 0;
-      margin-right: 4px;
+      margin-right: 0;
     }
     #transparency-label {
-      margin-top: 12px;
+      margin-top: 10px;
       user-select: none;
     }
-    #reset-btn, #update-btn, #toggle-control-btn {
+    #reset-btn, #update-btn {
       margin-top: 8px;
       width: 100%;
-      padding: 6px;
-      font-size: 13px;
+      padding: 7px;
+      font-size: 14px;
       background: #333;
       color: white;
       border: none;
       border-radius: 4px;
       cursor: pointer;
       user-select: none;
+      position: relative;
     }
     #update-btn {
-      position: relative;
       padding-right: 25px;
     }
     #info-icon {
@@ -132,8 +131,8 @@
       z-index: 1150;
       pointer-events: auto;
       user-select: none;
-      color: black;
-      word-wrap: break-word;
+      color: #222;
+      line-height: 1.3;
     }
     .legend {
       position: absolute;
@@ -168,6 +167,22 @@
       display: flex;
       justify-content: space-between;
     }
+    #toggle-menu-btn {
+      position: absolute;
+      top: 90px;
+      left: 10px;
+      background: rgba(255,255,255,0.95);
+      padding: 10px 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      z-index: 1150;
+      font-size: 13px;
+      cursor: pointer;
+      user-select: none;
+      display: none;
+      width: 160px;
+      text-align: center;
+    }
   </style>
   <title>Locatievinder Fitness Center</title>
 </head>
@@ -191,7 +206,6 @@
     <input type="range" min="0" max="1" step="0.01" id="weight-pop" value="0.50" />
     <span id="percent-pop">50%</span>
   </label>
-
   <label id="transparency-label" for="transparency-slider">Raster transparantie:
     <input type="range" min="0" max="1" step="0.01" id="transparency-slider" value="0.7" />
     <span id="percent-transparency">70%</span>
@@ -202,9 +216,10 @@
     <div id="info-text">De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.</div>
   </button>
   <button id="reset-btn" type="button">Reset</button>
+  <button id="close-menu-btn" type="button" style="margin-top: 10px;">Sluit menu</button>
 </div>
 
-<button id="toggle-control-btn" style="position: absolute; top: 90px; left: 10px; z-index: 1150; font-size: 13px; padding: 6px; border-radius: 4px; border: none; cursor: pointer; background: #333; color: white; user-select: none; display: none;">Open locatievinder menu</button>
+<button id="toggle-menu-btn">Open locatievinder menu</button>
 
 <div id="map"></div>
 
@@ -234,47 +249,6 @@
     }
   });
 
-  const controlBox = document.getElementById('control-box');
-  const toggleBtn = document.getElementById('toggle-control-btn');
-
-  toggleBtn.addEventListener('click', () => {
-    controlBox.style.display = 'block';
-    toggleBtn.style.display = 'none';
-  });
-
-  function toggleControlBox() {
-    if (controlBox.style.display === 'none' || controlBox.style.display === '') {
-      controlBox.style.display = 'block';
-      toggleBtn.style.display = 'none';
-    } else {
-      controlBox.style.display = 'none';
-      toggleBtn.style.display = 'block';
-    }
-  }
-
-  // Voeg sluit knop toe aan control-box (onderaan)
-  const closeBtn = document.createElement('button');
-  closeBtn.textContent = 'Sluit menu';
-  closeBtn.id = 'close-menu-btn';
-  closeBtn.style.marginTop = '8px';
-  closeBtn.style.width = '100%';
-  closeBtn.style.padding = '6px';
-  closeBtn.style.fontSize = '13px';
-  closeBtn.style.background = '#555';
-  closeBtn.style.color = 'white';
-  closeBtn.style.border = 'none';
-  closeBtn.style.borderRadius = '4px';
-  closeBtn.style.cursor = 'pointer';
-  closeBtn.style.userSelect = 'none';
-
-  closeBtn.addEventListener('click', toggleControlBox);
-  controlBox.appendChild(closeBtn);
-
-  // Start met control-box zichtbaar
-  controlBox.style.display = 'block';
-  toggleBtn.style.display = 'none';
-
-  // Map en lagen
   function getCenterCoords() {
     if (window.innerWidth <= 768) {
       return [52.10, 5.10];  // mobiel iets westelijker
@@ -295,17 +269,15 @@
     zoomSnap: 0.5,
     zoomDelta: 0.5
   }).setView(getCenterCoords(), 12);
-
+  
   map.setZoom(map.getZoom() - 0.5);
-
+  
   L.control.zoom({ position: 'topright' }).addTo(map);
   L.control.scale({ position: 'bottomright' }).addTo(map);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
-
-  let layer_group;
 
   function getColor(score) {
     return score > 6 ? '#1a9641' :
@@ -340,6 +312,9 @@
     layer.bindPopup('Suitability index: ' + ((feature.properties.MCA_score || 0).toFixed(2)));
   }
 
+  let layer_group;
+  let currentTransparency = 0.5;
+
   fetch('data/gridlayer_mca_fitness.geojson')
     .then(res => res.json())
     .then(data => {
@@ -353,116 +328,111 @@
       alert("Fout bij het laden van GeoJSON: " + e);
     });
 
-  // Sliders en percentages live update
-  const sliders = ['weight-fitness', 'weight-ov', 'weight-pop'];
-  const percentSpans = {
-    'weight-fitness': document.getElementById('percent-fitness'),
-    'weight-ov': document.getElementById('percent-ov'),
-    'weight-pop': document.getElementById('percent-pop')
-  };
+  function updateScores() {
+    let w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
+    let w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
+    let w_pop = parseFloat(document.getElementById('weight-pop').value) || 0;
 
-  function updatePercentages() {
-    sliders.forEach(id => {
-      const val = parseFloat(document.getElementById(id).value) || 0;
-      percentSpans[id].textContent = Math.round(val * 100) + '%';
+    // Automatische normalisatie:
+    const sum = w_ov + w_fit + w_pop;
+    if (sum > 0) {
+      w_ov /= sum;
+      w_fit /= sum;
+      w_pop /= sum;
+    } else {
+      // voorkom delen door nul, zet default waarden
+      w_ov = 0.2; w_fit = 0.3; w_pop = 0.5;
+    }
+
+    // Update sliders naar genormaliseerde waarden en percentages
+    document.getElementById('weight-ov').value = w_ov.toFixed(3);
+    document.getElementById('percent-ov').textContent = Math.round(w_ov * 100) + '%';
+
+    document.getElementById('weight-fitness').value = w_fit.toFixed(3);
+    document.getElementById('percent-fitness').textContent = Math.round(w_fit * 100) + '%';
+
+    document.getElementById('weight-pop').value = w_pop.toFixed(3);
+    document.getElementById('percent-pop').textContent = Math.round(w_pop * 100) + '%';
+
+    layer_group.eachLayer(layer => {
+      const p = layer.feature.properties;
+      const ov = parseFloat(p.score_bus) || 0;
+      const fit = parseFloat(p.score_fit) || 0;
+      const pop = parseFloat(p.score_pop) || 0;
+      p.MCA_score = w_ov * ov + w_fit * fit + w_pop * pop;
+
+      layer.setStyle(styleFeature(layer.feature));
+      layer.bindPopup('Suitability index: ' + p.MCA_score.toFixed(2));
     });
   }
 
-  sliders.forEach(id => {
-    document.getElementById(id).addEventListener('input', () => {
-      updatePercentages();
-      checkSumAndNormalize(false);
+  // Update percentage tekst bij slider beweging
+  function updatePercentDisplay(idRange, idPercent) {
+    const range = document.getElementById(idRange);
+    const percent = document.getElementById(idPercent);
+    range.addEventListener('input', () => {
+      percent.textContent = Math.round(parseFloat(range.value) * 100) + '%';
     });
-  });
+  }
+  updatePercentDisplay('weight-fitness', 'percent-fitness');
+  updatePercentDisplay('weight-ov', 'percent-ov');
+  updatePercentDisplay('weight-pop', 'percent-pop');
+  updatePercentDisplay('transparency-slider', 'percent-transparency');
 
   // Transparantie slider
-  const transparencySlider = document.getElementById('transparency-slider');
-  const percentTransparency = document.getElementById('percent-transparency');
-  let currentTransparency = parseFloat(transparencySlider.value);
-
-  transparencySlider.addEventListener('input', () => {
-    currentTransparency = parseFloat(transparencySlider.value);
-    percentTransparency.textContent = Math.round(currentTransparency * 100) + '%';
-    updateTransparency();
+  document.getElementById('transparency-slider').addEventListener('input', e => {
+    currentTransparency = parseFloat(e.target.value);
+    document.getElementById('percent-transparency').textContent = Math.round(currentTransparency * 100) + '%';
+    if (layer_group) {
+      layer_group.setStyle(layer => ({
+        ...styleFeature(layer.feature)
+      }));
+    }
   });
 
-  function updateTransparency() {
-    if (!layer_group) return;
-    layer_group.eachLayer(layer => {
-      layer.setStyle({ fillOpacity: currentTransparency });
-    });
-  }
-
-  // Som check & normalisatie
-  function checkSumAndNormalize(autoNormalize = true) {
-    let sum = 0;
-    sliders.forEach(id => {
-      sum += parseFloat(document.getElementById(id).value) || 0;
-    });
-
-    const sumDisplay = sum.toFixed(2);
-
-    if (Math.abs(sum - 1) > 0.01) {
-      // Warn user
-      if (autoNormalize) {
-        // Normaal de waardes automatisch
-        sliders.forEach(id => {
-          let val = parseFloat(document.getElementById(id).value) || 0;
-          val = val / sum;
-          document.getElementById(id).value = val.toFixed(4);
-        });
-        updatePercentages();
-      }
-    }
-  }
-
-  checkSumAndNormalize(true);
-
-  // MCA score update
-  function updateScores() {
-    if (!layer_group) return;
-    // Simuleer update, want eigenlijke berekening op server?
-    // Hier gewoon random aanpassen om demo te tonen
-    layer_group.eachLayer(layer => {
-      const props = layer.feature.properties;
-      const fWeight = parseFloat(document.getElementById('weight-fitness').value);
-      const ovWeight = parseFloat(document.getElementById('weight-ov').value);
-      const popWeight = parseFloat(document.getElementById('weight-pop').value);
-      // Een simpele gewogen score uit properties
-      const score =
-        (props.fitnessScore || 0) * fWeight +
-        (props.ovScore || 0) * ovWeight +
-        (props.popScore || 0) * popWeight;
-
-      props.MCA_score = score;
-      layer.setStyle({
-        fillColor: getColor(score),
-        fillOpacity: currentTransparency
-      });
-    });
-  }
-
+  // Knoppen
   document.getElementById('update-btn').addEventListener('click', () => {
     updateScores();
   });
 
   document.getElementById('reset-btn').addEventListener('click', () => {
-    // Reset naar standaardwaarden
     document.getElementById('weight-fitness').value = 0.3;
     document.getElementById('weight-ov').value = 0.2;
     document.getElementById('weight-pop').value = 0.5;
-    transparencySlider.value = 0.7;
+    document.getElementById('transparency-slider').value = 0.7;
+
+    document.getElementById('percent-fitness').textContent = '30%';
+    document.getElementById('percent-ov').textContent = '20%';
+    document.getElementById('percent-pop').textContent = '50%';
+    document.getElementById('percent-transparency').textContent = '70%';
+
     currentTransparency = 0.7;
-    updatePercentages();
-    percentTransparency.textContent = '70%';
-    updateTransparency();
+    if (layer_group) {
+      layer_group.setStyle(layer => ({
+        ...styleFeature(layer.feature)
+      }));
+    }
     updateScores();
   });
 
-  // Init
-  updatePercentages();
-  updateTransparency();
-</script>
+  const controlBox = document.getElementById('control-box');
+  const toggleMenuBtn = document.getElementById('toggle-menu-btn');
+  const closeMenuBtn = document.getElementById('close-menu-btn');
 
+  closeMenuBtn.addEventListener('click', () => {
+    controlBox.style.display = 'none';
+    toggleMenuBtn.style.display = 'block';
+  });
+
+  toggleMenuBtn.addEventListener('click', () => {
+    controlBox.style.display = 'flex';
+    toggleMenuBtn.style.display = 'none';
+  });
+
+  // Start met menu zichtbaar
+  controlBox.style.display = 'flex';
+  toggleMenuBtn.style.display = 'none';
+
+</script>
 </body>
 </html>
