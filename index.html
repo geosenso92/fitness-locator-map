@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="nl">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width" />
@@ -36,17 +36,71 @@
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
       z-index: 1000;
       font-size: 14px;
-      max-width: 200px;
+      max-width: 250px;
     }
     .control-box label {
-      display: block;
+      display: flex;
+      justify-content: space-between;
       margin-bottom: 6px;
+      align-items: center;
+    }
+    .control-box label span {
+      flex-grow: 1;
+      margin-right: 6px;
+    }
+    .info-icon {
+      cursor: pointer;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      background: #666;
+      color: white;
+      text-align: center;
+      font-weight: bold;
+      font-size: 12px;
+      line-height: 16px;
+      user-select: none;
+      position: relative;
+    }
+    .info-icon:hover .tooltip {
+      display: block;
+    }
+    .tooltip {
+      display: none;
+      position: absolute;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 1200;
+      width: max-content;
+      max-width: 220px;
+    }
+    .control-box button {
+      margin-top: 10px;
+      width: 100%;
+      padding: 6px 0;
+      font-size: 14px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .control-box button:hover {
+      background-color: #45a049;
     }
 
     #legend {
       position: absolute;
-      top: 60px;
-      right: 10px;
+      bottom: 40px; /* boven schaalbalk */
+      left: 10px;
       background: rgba(255,255,255,0.9);
       padding: 10px 15px;
       border-radius: 8px;
@@ -77,31 +131,42 @@
       font-size: 12px;
       font-family: monospace;
     }
-
   </style>
-  <title>Fitness MCA Dashboard</title>
+  <title>Optimale locatie voor fitnesscentra binnen de Gemeente Utrecht</title>
 </head>
 <body>
 
-  <div id="title">Fitness MCA Dashboard</div>
+  <div id="title">Optimale locatie voor fitnesscentra binnen de Gemeente Utrecht</div>
 
   <div id="map"></div>
 
   <div class="control-box">
-    <label>OV (score_bus):
-      <input type="range" min="0" max="1" step="0.1" id="weight-ov" value="0.33" />
+    <label>
+      <span>OV bereikbaarheid</span>
     </label>
-    <label>Fitness (score_fit):
-      <input type="range" min="0" max="1" step="0.1" id="weight-fitness" value="0.33" />
+    <input type="range" min="0" max="1" step="0.1" id="weight-ov" value="0.33" />
+    
+    <label>
+      <span>Nabijheid bestaande fitnesscentra</span>
     </label>
-    <label>Bevolking (score_pop):
-      <input type="range" min="0" max="1" step="0.1" id="weight-pop" value="0.33" />
+    <input type="range" min="0" max="1" step="0.1" id="weight-fitness" value="0.33" />
+    
+    <label>
+      <span>Bevolkingsdichtheid</span>
     </label>
-    <button onclick="updateScores()">Update MCA-score</button>
+    <input type="range" min="0" max="1" step="0.1" id="weight-pop" value="0.33" />
+    
+    <button onclick="updateScores()">Update suitability index</button>
+    <span class="info-icon" tabindex="0" aria-label="Info over suitability index">
+      i
+      <span class="tooltip" role="tooltip">
+        De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.
+      </span>
+    </span>
   </div>
 
   <div id="legend">
-    <div class="title">Legenda MCA-score</div>
+    <div class="title">Suitability index</div>
     <div class="colorbar"></div>
     <div class="labels">
       <span>0</span><span>2</span><span>4</span><span>6</span><span>10</span>
@@ -117,7 +182,6 @@
     }).addTo(map);
 
     L.control.zoom({ position: 'topright' }).addTo(map);
-
     L.control.scale({ position: 'bottomright', imperial: false }).addTo(map);
 
     // Hover highlight
@@ -133,7 +197,8 @@
     }
     function popFeature(feature, layer) {
       layer.on({ mouseover: highlightFeature, mouseout: resetHighlight });
-      layer.bindPopup('MCA_score: ' + (feature.properties.MCA_score || 0).toFixed(2));
+      // Pas popup tekst aan:
+      layer.bindPopup('Suitability index: ' + (feature.properties.MCA_score || 0).toFixed(2));
     }
 
     // Kleurenschaal
@@ -182,7 +247,7 @@
         p.MCA_score = w_ov * ov + w_fit * fit + w_pop * pop;
 
         layer.setStyle(styleFeature(layer.feature));
-        layer.bindPopup('MCA_score: ' + p.MCA_score.toFixed(2));
+        layer.bindPopup('Suitability index: ' + p.MCA_score.toFixed(2));
       });
     }
 
@@ -190,7 +255,7 @@
     ['weight-ov','weight-fitness','weight-pop'].forEach(id =>
       document.getElementById(id).addEventListener('input', updateScores)
     );
-
   </script>
+
 </body>
 </html>
