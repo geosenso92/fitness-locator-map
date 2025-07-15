@@ -431,7 +431,25 @@
 
   // Start met menu zichtbaar
   controlBox.style.display = 'flex';
-  toggleMenuBtn.style.display = 'none';
+
+fetch('https://raw.githubusercontent.com/geosenso92/fitness-locator-map/main/data/gemkaart24.json')
+  .then(response => response.json())
+  .then(data => {
+    L.geoJSON(data, {
+      style: {
+        color: "#555",
+        weight: 1,
+        fillOpacity: 0  // transparant invullen, alleen lijnen
+      },
+      onEachFeature: function (feature, layer) {
+        const naam = feature.properties.naam || "Gemeente";
+        layer.bindPopup("Gemeente: " + naam);
+      }
+    }).addTo(map);
+  })
+  .catch(error => {
+    console.error("Fout bij het laden van gemeentekaart:", error);
+  });
 
 </script>
 </body>
