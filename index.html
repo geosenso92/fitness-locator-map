@@ -65,7 +65,8 @@
       gap: 10px;
     }
     .control-box.show-stats {
-      min-height: 520px;
+      min-height: unset;
+      /* No forced min-height, so box is only as big as content! */
     }
     .control-box-title {
       font-size: 14px;
@@ -277,7 +278,7 @@
     }
     /* Flexbox: push the close button to the bottom */
     .control-box > #close-menu-btn {
-      margin-top: auto;
+      margin-top: 8px;
       margin-bottom: 0;
     }
 
@@ -300,6 +301,22 @@
       background: #fff;
       border: 1px solid #555;
       box-shadow: none;
+    }
+    /* Hide export and stats summary by default, show only with .show-stats */
+    #export-csv-btn, #export-json-btn, #selection-summary {
+      display: none;
+    }
+    .control-box.show-stats #export-csv-btn,
+    .control-box.show-stats #export-json-btn,
+    .control-box.show-stats #selection-summary {
+      display: block;
+    }
+    /* Reduce gap between summary and close button */
+    .control-box.show-stats > #selection-summary {
+      margin-bottom: 4px;
+    }
+    .control-box.show-stats > #close-menu-btn {
+      margin-top: 4px;
     }
   </style>
 </head>
@@ -333,7 +350,7 @@
     <input type="range" min="0" max="1" step="0.01" id="transparency-slider" value="0.5" />
     <span id="percent-transparency">50%</span>
   </label>
-  <!-- Export and summary for selection -->
+  <!-- Export and summary for selection (shown only with .show-stats) -->
   <button id="export-csv-btn" type="button">Export CSV</button>
   <button id="export-json-btn" type="button">Export JSON</button>
   <div id="selection-summary"></div>
