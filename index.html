@@ -248,6 +248,28 @@
       padding: 6px 10px;
       box-shadow: 0 0 5px rgba(0,0,0,0.2);
     }
+    /* Style for selection summary and export buttons */
+    #selection-summary {
+      background: #f9f9f9;
+      border-radius: 6px;
+      padding: 8px;
+      margin-top: 8px;
+      font-size: 13px;
+      border: 1px solid #ddd;
+      color: #222;
+    }
+    #export-csv-btn, #export-json-btn {
+      margin-top: 4px;
+      margin-bottom: 2px;
+      padding: 5px 12px;
+      font-size: 12px;
+      background: #2C3E83;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      user-select: none;
+    }
   </style>
 </head>
 <body>
@@ -281,6 +303,10 @@
     <span id="percent-transparency">50%</span>
   </label>
   <button id="close-menu-btn" type="button" style="margin-top: 8px;">Minimaliseer menu</button>
+  <!-- Export and summary for selection -->
+  <button id="export-csv-btn" type="button">Export CSV</button>
+  <button id="export-json-btn" type="button">Export JSON</button>
+  <div id="selection-summary"></div>
 </div>
 
 <button id="toggle-menu-btn">Open locatievinder menu</button>
@@ -610,7 +636,41 @@
   });
   map.addControl(drawControl);
 
-  // Event: als gebruiker iets tekent
+  // Export helpers
+  function exportSelectedAsCSV(selected) {
+    if (!selected.length) return;
+    let csv = "id,MCA_score\n";
+    selected.forEach((f, i) => {
+      // Use an id if available, else index
+      csv += (f.properties.id || i) + "," + (f.properties.MCA_score || 0) + "\n";
+    });
+    let blob = new Blob([csv], {type: "text/csv"});
+    let url = URL.createObjectURL(blob);
+    let link = document.createElement('a');
+    link.href = url;
+    link.download = 'selected_gridcells.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function exportSelectedAsJSON(selected) {
+    let data = selected.map(f => ({
+      ...f.properties
+    }));
+    let blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+    let url = URL.createObjectURL(blob);
+    let link = document.createElement('a');
+    link.href = url;
+    link.download = 'selected_gridcells.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // Selection summary and export
+  let selectedFeatures = [];
+
   map.on(L.Draw.Event.CREATED, function (event) {
     const layer = event.layer;
     drawnItems.clearLayers();
@@ -633,7 +693,24 @@
         }
       });
     }
-    console.log("Geselecteerde features:", selected);
+    // Save for export
+    selectedFeatures = selected;
+
+    // Calculate and show summary
+    let totalScore = 0, count = selected.length;
+    selected.forEach(f => { totalScore += f.properties.MCA_score || 0; });
+    let meanScore = count ? (totalScore / count) : 0;
+    document.getElementById('selection-summary').innerHTML =
+      `Aantal geselecteerde cellen: ${count}<br>
+      Som MCA_score: ${totalScore.toFixed(2)}<br>
+      Gemiddelde MCA_score: ${meanScore.toFixed(2)}`;
+  });
+
+  document.getElementById('export-csv-btn').addEventListener('click', () => {
+    exportSelectedAsCSV(selectedFeatures);
+  });
+  document.getElementById('export-json-btn').addEventListener('click', () => {
+    exportSelectedAsJSON(selectedFeatures);
   });
 </script>
 
