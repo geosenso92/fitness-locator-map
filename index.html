@@ -439,11 +439,11 @@ fetch('https://raw.githubusercontent.com/geosenso92/fitness-locator-map/main/dat
       style: {
         color: "#555",
         weight: 1,
-        fillOpacity: 0  // transparant invullen, alleen lijnen
+        fillOpacity: 0
       },
       onEachFeature: function (feature, layer) {
-        const naam = feature.properties.naam || "Gemeentenaam";
-        layer.bindPopup("Gemeente: " + naam);
+        const gemeentenaam = feature.properties.Gemeentenaam || "Onbekend";
+        layer.bindPopup("Gemeente: " + gemeentenaam);
       }
     }).addTo(map);
   })
