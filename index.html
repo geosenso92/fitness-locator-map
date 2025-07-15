@@ -435,34 +435,38 @@
 fetch('https://raw.githubusercontent.com/geosenso92/fitness-locator-map/main/data/gemkaart24.json')
   .then(response => response.json())
   .then(gemeenteData => {
-    const gemeenteLayer = L.geoJSON(gemeenteData, {
-      filter: function (feature) {
-        return feature.properties.gemeentenaam !== "Utrecht";
-      },
-      style: function (feature) {
-        return {
-          color: "#555",
-          weight: 1,
-          fillColor: "#f7f7f7",
-          fillOpacity: 0.3
-        };
-      },
-      onEachFeature: function (feature, layer) {
-        layer.on({
-          mouseover: function (e) {
-            e.target.setStyle({
-              weight: 2,
-              color: '#000',
-              fillOpacity: 0.5
-            });
-          },
-          mouseout: function (e) {
-            gemeenteLayer.resetStyle(e.target);
-          }
-        });
-      }
-    }).addTo(map);
-  })
+  const gemeenteLayer = L.geoJSON(gemeenteData, {
+    filter: feature => feature.properties.gemeentenaam !== "Utrecht",
+    style: {
+      color: "#555",
+      weight: 1,
+      fillColor: "#f7f7f7",
+      fillOpacity: 0.3
+    },
+    onEachFeature: function (feature, layer) {
+      // Tooltip verschijnt alleen bij hover
+      layer.bindTooltip(feature.properties.gemeentenaam, {
+        sticky: true
+      });
+
+      layer.on({
+        mouseover: function (e) {
+          e.target.setStyle({
+            weight: 2,
+            color: '#000',
+            fillOpacity: 0.5
+          });
+          // Tooltip opent automatisch bij hover, maar voor zekerheid:
+          e.target.openTooltip();
+        },
+        mouseout: function (e) {
+          gemeenteLayer.resetStyle(e.target);
+          e.target.closeTooltip();
+        }
+      });
+    }
+  }).addTo(map);
+})
   .catch(error => {
     console.error("Fout bij het laden van gemeentekaart:", error);
   });
