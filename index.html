@@ -238,11 +238,6 @@
 
 <script src="js/leaflet.js"></script>
 <script>
-  // Variabelen
-  let layer_group;
-  let currentTransparency = 0.5;
-
-  // Info icoon gedrag
   const infoIcon = document.getElementById('info-icon');
   const infoText = document.getElementById('info-text');
   infoIcon.addEventListener('click', () => {
@@ -254,7 +249,6 @@
     }
   });
 
-  // Functie voor start centrum
   function getCenterCoords() {
     if (window.innerWidth <= 768) {
       return [52.10, 5.10];  // mobiel iets westelijker
@@ -263,7 +257,6 @@
     }
   }
 
-  // Map initialiseren
   const map = L.map('map', {
     zoomControl: false,
     minZoom: 11,
@@ -286,29 +279,6 @@
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
-  // Gemeentekaart laag (achtergrond)
-  fetch('https://raw.githubusercontent.com/geosenso92/fitness-locator-map/main/data/gemkaart24.json')
-    .then(response => response.json())
-    .then(data => {
-      L.geoJSON(data, {
-        style: {
-          color: "#555",
-          weight: 1,
-          fillOpacity: 0
-        },
-        onEachFeature: function (feature, layer) {
-          const gemeentenaam = feature.properties.gemeentenaam || "Onbekend";
-          if (gemeentenaam.toLowerCase() !== "utrecht") {
-            layer.bindPopup("Gemeente: " + gemeentenaam);
-          }
-        }
-      }).addTo(map);
-    })
-    .catch(error => {
-      console.error("Fout bij het laden van gemeentekaart:", error);
-    });
-
-  // Kleuren functie voor scores
   function getColor(score) {
     return score > 6 ? '#1a9641' :
            score > 4 ? '#a6d96a' :
@@ -316,7 +286,6 @@
                        '#d7191c';
   }
 
-  // Style functie voor GeoJSON features
   function styleFeature(feature) {
     return {
       fillColor: getColor(feature.properties.MCA_score || 0),
@@ -326,16 +295,15 @@
     };
   }
 
-  // Highlight en reset highlight
   function highlightFeature(e) {
     const layer = e.target;
     layer.setStyle({ weight: 2, color: '#666' });
   }
+
   function resetHighlight(e) {
     layer_group.resetStyle(e.target);
   }
 
-  // Popup en event binding voor elke feature
   function popFeature(feature, layer) {
     layer.on({
       mouseover: highlightFeature,
@@ -344,7 +312,9 @@
     layer.bindPopup('Suitability index: ' + ((feature.properties.MCA_score || 0).toFixed(2)));
   }
 
-  // Laden van MCA gridlaag en toevoegen aan map
+  let layer_group;
+  let currentTransparency = 0.5;
+
   fetch('data/gridlayer_mca_fitness.geojson')
     .then(res => res.json())
     .then(data => {
@@ -358,23 +328,23 @@
       alert("Fout bij het laden van GeoJSON: " + e);
     });
 
-  // Update scores functie met normalisatie en style update
   function updateScores() {
     let w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
     let w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
     let w_pop = parseFloat(document.getElementById('weight-pop').value) || 0;
 
-    // Normaliseren van gewichten
+    // Automatische normalisatie:
     const sum = w_ov + w_fit + w_pop;
     if (sum > 0) {
       w_ov /= sum;
       w_fit /= sum;
       w_pop /= sum;
     } else {
+      // voorkom delen door nul, zet default waarden
       w_ov = 0.2; w_fit = 0.3; w_pop = 0.5;
     }
 
-    // Update sliders en labels naar genormaliseerde waarden
+    // Update sliders naar genormaliseerde waarden en percentages
     document.getElementById('weight-ov').value = w_ov.toFixed(3);
     document.getElementById('percent-ov').textContent = Math.round(w_ov * 100) + '%';
 
@@ -384,85 +354,123 @@
     document.getElementById('weight-pop').value = w_pop.toFixed(3);
     document.getElementById('percent-pop').textContent = Math.round(w_pop * 100) + '%';
 
-    // Bereken nieuwe MCA score en update style & popup
     layer_group.eachLayer(layer => {
       const p = layer.feature.properties;
-      const ov = parseFloat(p.score_ov) || 0;
-      const fit = parseFloat(p.score_fitness) || 0;
+      const ov = parseFloat(p.score_bus) || 0;
+      const fit = parseFloat(p.score_fit) || 0;
       const pop = parseFloat(p.score_pop) || 0;
-      const newScore = (ov * w_ov) + (fit * w_fit) + (pop * w_pop);
-      p.MCA_score = newScore;
-      layer.setStyle({ fillColor: getColor(newScore), fillOpacity: currentTransparency });
-      layer.bindPopup('Suitability index: ' + newScore.toFixed(2));
+      p.MCA_score = w_ov * ov + w_fit * fit + w_pop * pop;
+
+      layer.setStyle(styleFeature(layer.feature));
+      layer.bindPopup('Suitability index: ' + p.MCA_score.toFixed(2));
     });
   }
 
-  // Transparantie slider
-  const transparencySlider = document.getElementById('transparency-slider');
-  const percentTransparency = document.getElementById('percent-transparency');
-  transparencySlider.value = currentTransparency;
-  percentTransparency.textContent = Math.round(currentTransparency * 100) + '%';
+  // Update percentage tekst bij slider beweging
+  function updatePercentDisplay(idRange, idPercent) {
+    const range = document.getElementById(idRange);
+    const percent = document.getElementById(idPercent);
+    range.addEventListener('input', () => {
+      percent.textContent = Math.round(parseFloat(range.value) * 100) + '%';
+    });
+  }
+  updatePercentDisplay('weight-fitness', 'percent-fitness');
+  updatePercentDisplay('weight-ov', 'percent-ov');
+  updatePercentDisplay('weight-pop', 'percent-pop');
+  updatePercentDisplay('transparency-slider', 'percent-transparency');
 
-  transparencySlider.addEventListener('input', function () {
-    currentTransparency = parseFloat(this.value);
-    percentTransparency.textContent = Math.round(currentTransparency * 100) + '%';
+  // Transparantie slider
+  document.getElementById('transparency-slider').addEventListener('input', e => {
+    currentTransparency = parseFloat(e.target.value);
+    document.getElementById('percent-transparency').textContent = Math.round(currentTransparency * 100) + '%';
     if (layer_group) {
-      layer_group.setStyle({ fillOpacity: currentTransparency });
+      layer_group.setStyle(layer => ({
+        ...styleFeature(layer.feature)
+      }));
     }
   });
 
-  // Slider event listeners voor wegingen
-  ['weight-fitness', 'weight-ov', 'weight-pop'].forEach(id => {
-    document.getElementById(id).addEventListener('input', () => {
-      updateScores();
-    });
-  });
-
-  // Update knop
+  // Knoppen
   document.getElementById('update-btn').addEventListener('click', () => {
     updateScores();
   });
 
-  // Reset knop: zet alle sliders terug op standaardwaarden en update
   document.getElementById('reset-btn').addEventListener('click', () => {
-    document.getElementById('weight-fitness').value = 0.30;
-    document.getElementById('weight-ov').value = 0.20;
-    document.getElementById('weight-pop').value = 0.50;
-    transparencySlider.value = 0.5;
-    currentTransparency = 0.5;
-    percentTransparency.textContent = '50%';
+    document.getElementById('weight-fitness').value = 0.3;
+    document.getElementById('weight-ov').value = 0.2;
+    document.getElementById('weight-pop').value = 0.5;
+    document.getElementById('transparency-slider').value = 0.7;
+
+    document.getElementById('percent-fitness').textContent = '30%';
+    document.getElementById('percent-ov').textContent = '20%';
+    document.getElementById('percent-pop').textContent = '50%';
+    document.getElementById('percent-transparency').textContent = '70%';
+
+    currentTransparency = 0.7;
+    if (layer_group) {
+      layer_group.setStyle(layer => ({
+        ...styleFeature(layer.feature)
+      }));
+    }
     updateScores();
   });
 
-  // Responsive menu toggling (voor mobiel)
   const controlBox = document.getElementById('control-box');
   const toggleMenuBtn = document.getElementById('toggle-menu-btn');
   const closeMenuBtn = document.getElementById('close-menu-btn');
-
-  function checkWindowSize() {
-    if (window.innerWidth <= 768) {
-      controlBox.style.display = 'none';
-      toggleMenuBtn.style.display = 'block';
-    } else {
-      controlBox.style.display = 'flex';
-      toggleMenuBtn.style.display = 'none';
-    }
-  }
-
-  toggleMenuBtn.addEventListener('click', () => {
-    controlBox.style.display = 'flex';
-    toggleMenuBtn.style.display = 'none';
-  });
 
   closeMenuBtn.addEventListener('click', () => {
     controlBox.style.display = 'none';
     toggleMenuBtn.style.display = 'block';
   });
 
-  window.addEventListener('resize', checkWindowSize);
-  checkWindowSize();
+  toggleMenuBtn.addEventListener('click', () => {
+    controlBox.style.display = 'flex';
+    toggleMenuBtn.style.display = 'none';
+  });
 
+  // Start met menu zichtbaar
+  controlBox.style.display = 'flex';
+
+// Gemeentekaart laag (achtergrond)
+fetch('https://raw.githubusercontent.com/geosenso92/fitness-locator-map/main/data/gemkaart24.json')
+  .then(response => response.json())
+  .then(data => {
+    L.geoJSON(data, {
+      style: {
+        color: "#555",
+        weight: 1,
+        fillOpacity: 0
+      },
+      onEachFeature: function (feature, layer) {
+        const gemeentenaam = feature.properties.gemeentenaam || "Onbekend";
+        if (gemeentenaam.toLowerCase() !== "utrecht") {
+          layer.bindPopup("Gemeente: " + gemeentenaam);
+        }
+      }
+    }).addTo(map);
+  })
+  .catch(error => {
+    console.error("Fout bij het laden van gemeentekaart:", error);
+  });
+
+// Gridlaag met MCA scores (bovenop)
+let layer_group;
+let currentTransparency = 0.5;
+
+fetch('data/gridlayer_mca_fitness.geojson')
+  .then(res => res.json())
+  .then(data => {
+    layer_group = L.geoJSON(data, {
+      style: styleFeature,
+      onEachFeature: popFeature
+    }).addTo(map);
+    updateScores();
+  })
+  .catch(e => {
+    alert("Fout bij het laden van GeoJSON: " + e);
+  });
+  
 </script>
-
 </body>
 </html>
