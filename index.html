@@ -388,7 +388,7 @@
     layer_group.eachLayer(layer => {
       const p = layer.feature.properties;
       const ov = parseFloat(p.score_ov) || 0;
-      const fit = parseFloat(p.score_fit) || 0;
+      const fit = parseFloat(p.score_fitness) || 0;
       const pop = parseFloat(p.score_pop) || 0;
       const newScore = (ov * w_ov) + (fit * w_fit) + (pop * w_pop);
       p.MCA_score = newScore;
