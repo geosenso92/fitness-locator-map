@@ -439,21 +439,16 @@ fetch('https://raw.githubusercontent.com/geosenso92/fitness-locator-map/main/dat
       style: {
         color: "#555",
         weight: 1,
-        fillOpacity: 0
+        fillOpacity: 0  // transparant invullen, alleen lijnen
       },
       onEachFeature: function (feature, layer) {
-        const naam = feature.properties.Gemeentenaam;
-
-        // Alleen popup tonen als het NIET gemeente Utrecht is
-        if (naam && naam.toLowerCase() !== "utrecht") {
-          layer.bindPopup("Gemeente: " + naam);
-        }
+        const naam = feature.properties.naam || "Gemeentenaam";
+        layer.bindPopup("Gemeente: " + naam);
       }
     }).addTo(map);
   })
   .catch(error => {
     console.error("Fout bij het laden van gemeentekaart:", error);
-  });
   });
 
 </script>
