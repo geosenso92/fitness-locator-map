@@ -601,6 +601,7 @@ const drawnItems = new L.FeatureGroup().addTo(map);
 
 // Tekenfunctionaliteit
 const drawControl = new L.Control.Draw({
+  position: "bottomright", // THIS LINE CHANGES THE TOOLBAR POSITION
   edit: {
     featureGroup: drawnItems,
     edit: false,
@@ -618,27 +619,31 @@ const drawControl = new L.Control.Draw({
 map.addControl(drawControl);
 
 // Event: als gebruiker iets tekent
+<script>
 map.on(L.Draw.Event.CREATED, function (event) {
   const layer = event.layer;
-  drawnItems.clearLayers(); // Verwijder vorige selectie
-  drawnItems.addLayer(layer); // Voeg nieuwe toe
+  drawnItems.clearLayers();
+  drawnItems.addLayer(layer);
 
   const drawnGeoJSON = layer.toGeoJSON();
   const selected = [];
-
-  geojsonLayer.eachLayer(function (featureLayer) {
+  // Use the correct layer group:
+  layer_group.eachLayer(function (featureLayer) {
     const feature = featureLayer.toGeoJSON();
     if (turf.booleanIntersects(drawnGeoJSON, feature)) {
       selected.push(feature);
-      featureLayer.setStyle({ color: 'red' }); // Highlight selectie
+      featureLayer.setStyle({
+        color: 'red',
+        weight: 2,
+        fillOpacity: 0.8, // Optional highlight
+      });
     } else {
-      featureLayer.setStyle({ color: '#3388ff' }); // Reset stijl
+      // Reset to original style
+      featureLayer.setStyle(styleFeature(featureLayer.feature));
     }
   });
-
   console.log("Geselecteerde features:", selected);
 });
-
 </script>
 
 </body>
