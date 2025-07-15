@@ -4,11 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width" />
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+  <!-- Title and favicon -->
+  <title>Dashboard Location-finder (demo: fitnesscenter)</title>
   <link rel="icon" href="data/1-aafea2ea.ico" type="image/ico" />
 
-  <title>Locatievinder Fitnesscentra</title>
+  <!-- Leaflet and Drawing Tools -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+
   <style>
     html, body {
       width: 100%; height: 100%; margin: 0; padding: 0;
@@ -66,7 +69,6 @@
     }
     .control-box.show-stats {
       min-height: unset;
-      /* No forced min-height, so box is only as big as content! */
     }
     .control-box-title {
       font-size: 14px;
@@ -254,7 +256,6 @@
       padding: 6px 10px;
       box-shadow: 0 0 5px rgba(0,0,0,0.2);
     }
-    /* Style for selection summary and export buttons */
     #selection-summary {
       background: #f9f9f9;
       border-radius: 6px;
@@ -276,13 +277,10 @@
       cursor: pointer;
       user-select: none;
     }
-    /* Flexbox: push the close button to the bottom */
     .control-box > #close-menu-btn {
       margin-top: 8px;
       margin-bottom: 0;
     }
-
-    /* Make Leaflet.draw edit/vertex squares smaller */
     .leaflet-div-icon.leaflet-editing-icon,
     .leaflet-div-icon.leaflet-draw-edit-edit,
     .leaflet-div-icon.leaflet-draw-edit-move {
@@ -302,7 +300,6 @@
       border: 1px solid #555;
       box-shadow: none;
     }
-    /* Hide export and stats summary by default, show only with .show-stats */
     #export-csv-btn, #export-json-btn, #selection-summary {
       display: none;
     }
@@ -311,12 +308,15 @@
     .control-box.show-stats #selection-summary {
       display: block;
     }
-    /* Reduce gap between summary and close button */
     .control-box.show-stats > #selection-summary {
       margin-bottom: 4px;
     }
     .control-box.show-stats > #close-menu-btn {
       margin-top: 4px;
+    }
+    /* Make area tooltip on draw show km² instead of ha */
+    .leaflet-draw-tooltip-subarea {
+      font-size: 13px;
     }
   </style>
 </head>
@@ -324,7 +324,7 @@
 
 <div id="header-container">
   <img id="logo" src="data/NewLogo21.png" alt="Logo" />
-  <div id="page-title">Locatievinder Fitnesscentra</div>
+  <div id="page-title">Dashboard Location-finder (demo: fitnesscenter)</div>
 </div>
 
 <div class="control-box" id="control-box">
@@ -350,7 +350,6 @@
     <input type="range" min="0" max="1" step="0.01" id="transparency-slider" value="0.5" />
     <span id="percent-transparency">50%</span>
   </label>
-  <!-- Export and summary for selection (shown only with .show-stats) -->
   <button id="export-csv-btn" type="button">Export CSV</button>
   <button id="export-json-btn" type="button">Export JSON</button>
   <div id="selection-summary"></div>
@@ -390,6 +389,9 @@
 <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
 <script>
+  // Change URL bar title (if user navigates directly via url)
+  document.title = "Dashboard Location-finder (demo: fitnesscenter)";
+
   // Info icon logic
   const infoIcon = document.getElementById('info-icon');
   const infoText = document.getElementById('info-text');
@@ -559,6 +561,20 @@
     updateScores();
   });
 
+  // --- CLEAR SELECTION LOGIC ---
+  function clearSelectionAndStats() {
+    drawnItems.clearLayers();
+    selectedFeatures = [];
+    document.getElementById('selection-summary').innerHTML = '';
+    controlBox.classList.remove('show-stats');
+    // Reset all grid cells style to normal (remove highlight)
+    if (layer_group) {
+      layer_group.eachLayer(function (featureLayer) {
+        featureLayer.setStyle(styleFeature(featureLayer.feature));
+      });
+    }
+  }
+
   document.getElementById('reset-btn').addEventListener('click', () => {
     document.getElementById('weight-fitness').value = 0.3;
     document.getElementById('weight-ov').value = 0.2;
@@ -579,10 +595,7 @@
     updateScores();
 
     // Clear selection and statistics, shrink control box
-    drawnItems.clearLayers();
-    selectedFeatures = [];
-    document.getElementById('selection-summary').innerHTML = '';
-    controlBox.classList.remove('show-stats');
+    clearSelectionAndStats();
   });
 
   const controlBox = document.getElementById('control-box');
@@ -663,6 +676,19 @@
 
   const drawnItems = new L.FeatureGroup().addTo(map);
 
+  // --- CUSTOM AREA FORMAT FOR DRAW TOOLTIP ---
+  // Patch Leaflet.Draw's area display to show km² instead of ha in tooltips
+  // (Override the formatArea method)
+  var LDraw = window.L.Draw ? window.L.Draw : window.L.draw;
+  if (LDraw && LDraw.Tooltip && LDraw.Tooltip.prototype) {
+    LDraw.Tooltip.prototype._formatArea = function(area) {
+      // area in m2
+      var km2 = area / 1e6;
+      return km2.toLocaleString('nl-NL', {maximumFractionDigits: 2}) + ' km²';
+    }
+  }
+
+  // Set up drawing control
   const drawControl = new L.Control.Draw({
     position: "bottomright",
     edit: {
@@ -759,9 +785,13 @@
         Totale oppervlakte: ${areaKm2.toFixed(1)} km²<br>
         Gemiddelde MCA_score: ${meanScore.toFixed(2)}`;
     } else {
-      controlBox.classList.remove('show-stats');
-      document.getElementById('selection-summary').innerHTML = '';
+      clearSelectionAndStats();
     }
+  });
+
+  // Catch draw:deleted event (trash bin and programmatic deletes)
+  map.on('draw:deleted', function() {
+    clearSelectionAndStats();
   });
 
   document.getElementById('export-csv-btn').addEventListener('click', () => {
