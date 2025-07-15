@@ -135,19 +135,20 @@
       line-height: 1.3;
     }
     .legend {
-      position: absolute;
-      bottom: 10px;
-      left: 10px;
-      padding: 8px 12px;
-      background: white;
-      font-size: 12px;
-      border-radius: 6px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.3);
-      z-index: 1100;
-      width: 180px;
-      line-height: 18px;
-      user-select: none;
-    }
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  padding: 8px 12px;
+  background: white;
+  font-size: 12px;
+  border-radius: 6px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.3);
+  z-index: 1100;
+  width: 180px;
+  line-height: 18px;
+  user-select: none;
+  position: relative; /* belangrijk voor absolute kinderen */
+}
     .legend-title {
       font-weight: bold;
       margin-bottom: 7px;
@@ -187,15 +188,47 @@
       width: 160px;
       text-align: center;
     }
-    .legend-info-toggle {
-  text-align: right;
+    #legend-info-toggle {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 20px;
+  height: 20px;
+  background: black;
+  color: white;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 14px;
+  text-align: center;
+  line-height: 20px;
   cursor: pointer;
+  user-select: none;
+  z-index: 1200;
 }
 .legend-info {
   font-size: 11px;
   color: #444;
   margin-top: 4px;
   line-height: 1.3;
+}
+/* Minimaliseerknop rechtsboven in legend met grijs vierkant */
+#legend-toggle {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  background: #ccc;
+  color: #333;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 20px;
+  text-align: center;
+  line-height: 26px;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  z-index: 1200;
 }
   </style>
   <title>Locatievinder Fitness Center</title>
@@ -238,10 +271,11 @@
 <div id="map"></div>
 
 <div class="legend" id="legend">
+  <div id="legend-info-toggle" title="Toon uitleg">ℹ️</div>
+  <div id="legend-toggle" title="Minimaliseer legenda">−</div>
   <div class="legend-title" style="font-size: 14px; text-align: center; margin-bottom: 5px;">Legenda</div>
   <div class="legend-header" style="display: flex; justify-content: space-between; align-items: center;">
     <span class="legend-title">Suitability index</span>
-    <div id="legend-toggle" title="Minimaliseer legenda" style="cursor:pointer;">−</div>
   </div>
   <div class="legend-body" id="legend-body">
     <div class="legend-bar legend-scale">
@@ -256,9 +290,6 @@
     <div class="legend-labels">
       <span class="legend-label-left">0 (niet geschikt)</span>
       <span class="legend-label-right">10 (uiterst geschikt)</span>
-    </div>
-    <div class="legend-info-toggle" id="legend-info-toggle" title="Toon uitleg">
-      ℹ️
     </div>
     <div class="legend-info" id="legend-info" style="display: none;">
       De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.
