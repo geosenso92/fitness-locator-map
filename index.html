@@ -218,8 +218,8 @@
       display: none;
     }
 .leaflet-control-layers {
-  top: 16px !important; /* net onder de zoomknoppen */
-  right: 5px !important;
+  top: 15px !important; /* net onder de zoomknoppen */
+  right: 4px !important;
   background: rgba(255, 255, 255, 0.9);
   border-radius: 6px;
   padding: 6px 10px;
@@ -262,13 +262,24 @@
   </label>
   <button id="close-menu-btn" type="button" style="margin-top: 8px;">Minimaliseer menu</button>
 </div>
-
+<!-- Bronvermelding -->
+  <div style="font-size: 8px; color: #999; margin-top: 10px; text-align: center; user-select: none;">
+    Data bronnen: 
+    <a href="https://www.cbs.nl/" target="_blank" rel="noopener noreferrer" style="color: #999; text-decoration: underline;">CBS</a>, 
+    <a href="https://www.openstreetmap.org" target="_blank" rel="noopener noreferrer" style="color: #999; text-decoration: underline;">OpenStreetMap</a>
+  </div>
+</div>
 <button id="toggle-menu-btn">Open locatievinder menu</button>
 
 <div id="map"></div>
 
 <div class="legend" id="legend">
-  <div id="legend-info-toggle" title="Toon uitleg">ℹ️</div>
+  <div id="legend-info-toggle" title="De suitability index is het resultaat van de factoren waarbij verschillende wegingen kunnen worden toegepast. 
+      0 = niet geschikt | 10 = uiterst geschikt">ℹ️</div>
+   <div class="legend-info" id="legend-info" style="display: none;">
+      De suitability index is het resultaat van de factoren waarbij verschillende wegingen kunnen worden toegepast. 
+      0 = niet geschikt | 10 = uiterst geschikt
+  </div>
   <div class="legend-title" style="font-size: 14px; text-align: center; margin-bottom: 5px;">Legenda</div>
   <div class="legend-header" style="display: flex; justify-content: space-between; align-items: center;">
     <span class="legend-title">Suitability index</span>
@@ -286,11 +297,8 @@
       <span class="legend-label-left">0 </span>
       <span class="legend-label-right">10</span>
     </div>
-    <div class="legend-info" id="legend-info" style="display: none;">
-      De suitability index is het resultaat van de factoren waarbij verschillende wegingen kunnen worden toegepast. 
-      0 = niet geschikt | 10 = uiterst geschikt
-  </div>
 </div>
+
 
 <script src="js/leaflet.js"></script>
 <script>
