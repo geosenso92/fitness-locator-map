@@ -250,211 +250,215 @@
   });
 
   function getCenterCoords() {
-    if (window.innerWidth <= 768) {
-      return [52.10, 5.10];  // mobiel iets westelijker
-    } else {
-      return [52.09, 5.42];  // desktop
+    if (window.innerWidth <= 767) {
+      return [52.0907, 5.1214]; // Utrecht center for mobile
     }
+    return [52.0907, 5.1214]; // Utrecht center for desktop too
   }
 
+  // Initialize map
   const map = L.map('map', {
-    zoomControl: false,
-    minZoom: 11,
+    center: getCenterCoords(),
+    zoom: 11,
     maxZoom: 18,
-    maxBounds: [
-      [51.90, 4.75],
-      [52.28, 5.35]
-    ],
-    maxBoundsViscosity: 1.0,
-    zoomSnap: 0.5,
-    zoomDelta: 0.5
-  }).setView(getCenterCoords(), 12);
-  
-  map.setZoom(map.getZoom() - 0.5);
-  
+    minZoom: 10,
+    zoomControl: false
+  });
   L.control.zoom({ position: 'topright' }).addTo(map);
-  L.control.scale({ position: 'bottomright' }).addTo(map);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
+  // Add basemap
+  const basemap = L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 18,
+      minZoom: 10
+    }
+  ).addTo(map);
 
-  function getColor(score) {
-    return score > 6 ? '#1a9641' :
-           score > 4 ? '#a6d96a' :
-           score > 2 ? '#fdae61' :
-                       '#d7191c';
-  }
+  // Global variables for layers
+  let gridLayer;
+  let gridLayerHighlight;
+  let mcaLayer;
 
-  function styleFeature(feature) {
+  // Style for MCA municipalities (base)
+  function mcaStyle(feature) {
     return {
-      fillColor: getColor(feature.properties.MCA_score || 0),
+      fillColor: getColorMCA(feature.properties.suitability),
       weight: 1,
-      color: '#333',
-      fillOpacity: currentTransparency
+      opacity: 1,
+      color: 'gray',
+      fillOpacity: 0.7
     };
   }
 
-  function highlightFeature(e) {
-    const layer = e.target;
-    layer.setStyle({ weight: 2, color: '#666' });
+  // Color scale for MCA suitability index (municipalities)
+  function getColorMCA(d) {
+    // Match your legend colors approx.
+    return d > 9 ? '#1a9641' :
+           d > 6 ? '#a6d96a' :
+           d > 3 ? '#fdae61' :
+           d > 0 ? '#d7191c' :
+                   '#eee';
   }
 
-  function resetHighlight(e) {
-    layer_group.resetStyle(e.target);
+  // Style for grid cells
+  function gridStyle(feature) {
+    return {
+      fillColor: getColorGrid(feature.properties.suitability),
+      weight: 0.8,
+      color: '#444',
+      fillOpacity: transparencySlider.value
+    };
   }
 
-  function popFeature(feature, layer) {
-    layer.on({
-      mouseover: highlightFeature,
-      mouseout: resetHighlight
-    });
-    layer.bindPopup('Suitability index: ' + ((feature.properties.MCA_score || 0).toFixed(2)));
+  // Color scale for grid suitability (slightly different)
+  function getColorGrid(d) {
+    return d > 9 ? '#006837' :
+           d > 6 ? '#78c679' :
+           d > 3 ? '#c2e699' :
+           d > 0 ? '#ffffcc' :
+                   'transparent';
   }
 
-  let layer_group;
-  let currentTransparency = 0.5;
+  // Load municipal boundaries MCA (with popup only outside Utrecht)
+  fetch('data/gemeentekaart_mca.geojson')
+    .then(res => res.json())
+    .then(data => {
+      // Add MCA layer
+      mcaLayer = L.geoJSON(data, {
+        style: mcaStyle,
+        onEachFeature: function(feature, layer) {
+          const gemeenteNaam = feature.properties.Gemeentenaam;
+          const suitability = feature.properties.suitability;
+          // Popup only outside Utrecht (gemeente Utrecht)
+          if (gemeenteNaam.toLowerCase() !== 'utrecht') {
+            layer.bindPopup(`<b>${gemeenteNaam}</b><br/>Geschiktheidsindex: ${suitability.toFixed(2)}`);
+          }
+          // No popup and no highlight inside Utrecht
+        }
+      }).addTo(map);
+    })
+    .catch(err => console.error('Error loading MCA gemeentekaart:', err));
 
+  // Load grid layer (data/gridlayer_mca_fitness.geojson)
   fetch('data/gridlayer_mca_fitness.geojson')
     .then(res => res.json())
     .then(data => {
-      layer_group = L.geoJSON(data, {
-        style: styleFeature,
-        onEachFeature: popFeature
+      gridLayer = L.geoJSON(data, {
+        style: gridStyle,
+        onEachFeature: function(feature, layer) {
+          layer.on({
+            mouseover: function(e) {
+              const layer = e.target;
+              layer.setStyle({
+                weight: 3,
+                color: '#000',
+                fillOpacity: 0.9
+              });
+              if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                layer.bringToFront();
+              }
+              // Show popup
+              layer.bindPopup(`Grid Cell<br>Suitability index: ${feature.properties.suitability.toFixed(2)}`).openPopup();
+            },
+            mouseout: function(e) {
+              gridLayer.resetStyle(e.target);
+              layer.closePopup();
+            },
+            click: function(e) {
+              // Keep popup open on click
+              layer.openPopup();
+            }
+          });
+        }
       }).addTo(map);
-      updateScores();
     })
-    .catch(e => {
-      alert("Fout bij het laden van GeoJSON: " + e);
-    });
+    .catch(err => console.error('Error loading grid layer:', err));
 
-  function updateScores() {
-    let w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
-    let w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
-    let w_pop = parseFloat(document.getElementById('weight-pop').value) || 0;
+  // Handle transparency slider for grid layer
+  const transparencySlider = document.getElementById('transparency-slider');
+  const percentTransparency = document.getElementById('percent-transparency');
 
-    // Automatische normalisatie:
-    const sum = w_ov + w_fit + w_pop;
-    if (sum > 0) {
-      w_ov /= sum;
-      w_fit /= sum;
-      w_pop /= sum;
-    } else {
-      // voorkom delen door nul, zet default waarden
-      w_ov = 0.2; w_fit = 0.3; w_pop = 0.5;
+  transparencySlider.addEventListener('input', () => {
+    percentTransparency.textContent = `${Math.round(transparencySlider.value * 100)}%`;
+    if (gridLayer) {
+      gridLayer.setStyle({
+        fillOpacity: parseFloat(transparencySlider.value)
+      });
     }
+  });
 
-    // Update sliders naar genormaliseerde waarden en percentages
-    document.getElementById('weight-ov').value = w_ov.toFixed(3);
-    document.getElementById('percent-ov').textContent = Math.round(w_ov * 100) + '%';
+  // Weights sliders
+  const weightFitness = document.getElementById('weight-fitness');
+  const weightOV = document.getElementById('weight-ov');
+  const weightPop = document.getElementById('weight-pop');
 
-    document.getElementById('weight-fitness').value = w_fit.toFixed(3);
-    document.getElementById('percent-fitness').textContent = Math.round(w_fit * 100) + '%';
+  const percentFitness = document.getElementById('percent-fitness');
+  const percentOV = document.getElementById('percent-ov');
+  const percentPop = document.getElementById('percent-pop');
 
-    document.getElementById('weight-pop').value = w_pop.toFixed(3);
-    document.getElementById('percent-pop').textContent = Math.round(w_pop * 100) + '%';
-
-    layer_group.eachLayer(layer => {
-      const p = layer.feature.properties;
-      const ov = parseFloat(p.score_bus) || 0;
-      const fit = parseFloat(p.score_fit) || 0;
-      const pop = parseFloat(p.score_pop) || 0;
-      p.MCA_score = w_ov * ov + w_fit * fit + w_pop * pop;
-
-      layer.setStyle(styleFeature(layer.feature));
-      layer.bindPopup('Suitability index: ' + p.MCA_score.toFixed(2));
-    });
+  function updateWeightDisplays() {
+    percentFitness.textContent = `${Math.round(weightFitness.value * 100)}%`;
+    percentOV.textContent = `${Math.round(weightOV.value * 100)}%`;
+    percentPop.textContent = `${Math.round(weightPop.value * 100)}%`;
   }
 
-  // Update percentage tekst bij slider beweging
-  function updatePercentDisplay(idRange, idPercent) {
-    const range = document.getElementById(idRange);
-    const percent = document.getElementById(idPercent);
-    range.addEventListener('input', () => {
-      percent.textContent = Math.round(parseFloat(range.value) * 100) + '%';
-    });
-  }
-  updatePercentDisplay('weight-fitness', 'percent-fitness');
-  updatePercentDisplay('weight-ov', 'percent-ov');
-  updatePercentDisplay('weight-pop', 'percent-pop');
-  updatePercentDisplay('transparency-slider', 'percent-transparency');
+  weightFitness.addEventListener('input', updateWeightDisplays);
+  weightOV.addEventListener('input', updateWeightDisplays);
+  weightPop.addEventListener('input', updateWeightDisplays);
 
-  // Transparantie slider
-  document.getElementById('transparency-slider').addEventListener('input', e => {
-    currentTransparency = parseFloat(e.target.value);
-    document.getElementById('percent-transparency').textContent = Math.round(currentTransparency * 100) + '%';
-    if (layer_group) {
-      layer_group.setStyle(layer => ({
-        ...styleFeature(layer.feature)
-      }));
+  updateWeightDisplays();
+
+  // Update and Reset buttons logic
+  const updateBtn = document.getElementById('update-btn');
+  const resetBtn = document.getElementById('reset-btn');
+
+  updateBtn.addEventListener('click', () => {
+    // Here, trigger your update of the suitability index (e.g. recalc, fetch new grid data)
+    alert('Update suitability index clicked. Hier kun je jouw MCA logica toevoegen.');
+  });
+
+  resetBtn.addEventListener('click', () => {
+    // Reset sliders to default values
+    weightFitness.value = 0.3;
+    weightOV.value = 0.2;
+    weightPop.value = 0.5;
+    transparencySlider.value = 0.5;
+
+    updateWeightDisplays();
+    percentTransparency.textContent = '50%';
+
+    if (gridLayer) {
+      gridLayer.setStyle({ fillOpacity: 0.5 });
     }
   });
 
-  // Knoppen
-  document.getElementById('update-btn').addEventListener('click', () => {
-    updateScores();
-  });
-
-  document.getElementById('reset-btn').addEventListener('click', () => {
-    document.getElementById('weight-fitness').value = 0.3;
-    document.getElementById('weight-ov').value = 0.2;
-    document.getElementById('weight-pop').value = 0.5;
-    document.getElementById('transparency-slider').value = 0.7;
-
-    document.getElementById('percent-fitness').textContent = '30%';
-    document.getElementById('percent-ov').textContent = '20%';
-    document.getElementById('percent-pop').textContent = '50%';
-    document.getElementById('percent-transparency').textContent = '70%';
-
-    currentTransparency = 0.7;
-    if (layer_group) {
-      layer_group.setStyle(layer => ({
-        ...styleFeature(layer.feature)
-      }));
-    }
-    updateScores();
-  });
-
+  // Menu toggle for small screens
   const controlBox = document.getElementById('control-box');
   const toggleMenuBtn = document.getElementById('toggle-menu-btn');
   const closeMenuBtn = document.getElementById('close-menu-btn');
 
-  closeMenuBtn.addEventListener('click', () => {
-    controlBox.style.display = 'none';
-    toggleMenuBtn.style.display = 'block';
-  });
+  function showMenu(show) {
+    if (show) {
+      controlBox.style.display = 'flex';
+      toggleMenuBtn.style.display = 'none';
+    } else {
+      controlBox.style.display = 'none';
+      toggleMenuBtn.style.display = 'block';
+    }
+  }
 
-  toggleMenuBtn.addEventListener('click', () => {
-    controlBox.style.display = 'flex';
-    toggleMenuBtn.style.display = 'none';
-  });
+  toggleMenuBtn.addEventListener('click', () => showMenu(true));
+  closeMenuBtn.addEventListener('click', () => showMenu(false));
 
-  // Start met menu zichtbaar
-  controlBox.style.display = 'flex';
-
-fetch('https://raw.githubusercontent.com/geosenso92/fitness-locator-map/main/data/gemkaart24.json')
-  .then(response => response.json())
-  .then(data => {
-    L.geoJSON(data, {
-      style: {
-        color: "#555",
-        weight: 1,
-        fillOpacity: 0
-      },
-      onEachFeature: function (feature, layer) {
-        const gemeentenaam = feature.properties.gemeentenaam || "Onbekend";
-
-        // Alleen popup tonen als het NIET de gemeente Utrecht is
-        if (gemeentenaam.toLowerCase() !== "utrecht") {
-          layer.bindPopup("Gemeente: " + gemeentenaam);
-        }
-      }
-    }).addTo(map);
-  })
-  .catch(error => {
-    console.error("Fout bij het laden van gemeentekaart:", error);
-  });
-
+  // Show menu by default on large screens, hide on mobile
+  if (window.innerWidth <= 767) {
+    showMenu(false);
+  } else {
+    showMenu(true);
+  }
 </script>
+
 </body>
 </html>
