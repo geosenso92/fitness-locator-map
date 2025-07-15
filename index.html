@@ -393,6 +393,7 @@
       const newScore = (ov * w_ov) + (fit * w_fit) + (pop * w_pop);
       p.MCA_score = newScore;
       layer.setStyle({ fillColor: getColor(newScore), fillOpacity: currentTransparency });
+      layer.unbindPopup();
       layer.bindPopup('Suitability index: ' + newScore.toFixed(2));
     });
   }
