@@ -236,6 +236,15 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.2);
       z-index: 1200;
     }
+.leaflet-control-layers {
+  top: 80px !important; /* bv. iets onder de zoom buttons */
+  right: 10px !important;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 6px;
+  padding: 6px 10px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.2);
+}
+
   </style>
   <title>Locatievinder Fitnesscentra</title>
 </head>
@@ -566,6 +575,34 @@ fetch('https://raw.githubusercontent.com/geosenso92/fitness-locator-map/main/dat
     console.error("Fout bij het laden van gemeentekaart:", error);
   });
 
+
+// Basis OpenStreetMap laag
+const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '© OpenStreetMap contributors'
+});
+
+// Satelliet laag (Esri World Imagery)
+const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/' +
+  'World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom: 19,
+  attribution: 'Tiles © Esri'
+});
+
+  const baseMaps = {
+  "OpenStreetMap": osmLayer,
+  "Satelliet": satelliteLayer
+};
+
+const map = L.map('map', {
+  center: [52.1, 5.1], // pas aan naar jouw gewenste startlocatie
+  zoom: 8,
+  layers: [osmLayer] // start met OSM
+});
+
+// Voeg laagkeuzeknop toe (standaard rechtsboven)
+L.control.layers(baseMaps).addTo(map);
+  
 </script>
 </body>
 </html>
