@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width" />
 
-  <!-- Only one Leaflet CSS and one Leaflet Draw CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
   <link rel="icon" href="data/1-aafea2ea.ico" type="image/ico" />
@@ -47,6 +46,11 @@
       z-index: 0;
     }
     .control-box {
+      display: flex;
+      flex-direction: column;
+      height: auto;
+      min-height: unset;
+      transition: min-height 0.3s, height 0.3s;
       position: absolute;
       top: 90px;
       left: 10px;
@@ -58,11 +62,10 @@
       width: 320px;
       font-size: 12px;
       user-select: none;
-      display: flex;
-      flex-direction: column;
       gap: 10px;
-      height: auto;
-      min-height: 400px;
+    }
+    .control-box.show-stats {
+      min-height: 520px;
     }
     .control-box-title {
       font-size: 14px;
@@ -273,14 +276,30 @@
       user-select: none;
     }
     /* Flexbox: push the close button to the bottom */
-    .control-box {
-      display: flex;
-      flex-direction: column;
-      height: 560px; /* or auto+min-height as you like */
-    }
     .control-box > #close-menu-btn {
       margin-top: auto;
       margin-bottom: 0;
+    }
+
+    /* Make Leaflet.draw edit/vertex squares smaller */
+    .leaflet-div-icon.leaflet-editing-icon,
+    .leaflet-div-icon.leaflet-draw-edit-edit,
+    .leaflet-div-icon.leaflet-draw-edit-move {
+      width: 8px !important;
+      height: 8px !important;
+      margin-left: -4px !important;
+      margin-top: -4px !important;
+      border-radius: 2px !important;
+    }
+    .leaflet-div-icon.leaflet-editing-icon {
+      background: #fff;
+      border: 1px solid #333;
+      box-shadow: none;
+    }
+    .leaflet-div-icon.leaflet-draw-edit-move {
+      background: #fff;
+      border: 1px solid #555;
+      box-shadow: none;
     }
   </style>
 </head>
@@ -350,7 +369,6 @@
   </div>
 </div>
 
-<!-- JS includes at bottom for correct order -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
@@ -498,7 +516,6 @@
     }
   }
 
-  // Slider display
   function updatePercentDisplay(idRange, idPercent) {
     const range = document.getElementById(idRange);
     const percent = document.getElementById(idPercent);
@@ -511,7 +528,6 @@
   updatePercentDisplay('weight-pop', 'percent-pop');
   updatePercentDisplay('transparency-slider', 'percent-transparency');
 
-  // Transparantie slider
   document.getElementById('transparency-slider').addEventListener('input', e => {
     currentTransparency = parseFloat(e.target.value);
     document.getElementById('percent-transparency').textContent = Math.round(currentTransparency * 100) + '%';
@@ -522,7 +538,6 @@
     }
   });
 
-  // Knoppen
   document.getElementById('update-btn').addEventListener('click', () => {
     updateScores();
   });
@@ -545,6 +560,12 @@
       }));
     }
     updateScores();
+
+    // Clear selection and statistics, shrink control box
+    drawnItems.clearLayers();
+    selectedFeatures = [];
+    document.getElementById('selection-summary').innerHTML = '';
+    controlBox.classList.remove('show-stats');
   });
 
   const controlBox = document.getElementById('control-box');
@@ -561,10 +582,8 @@
     toggleMenuBtn.style.display = 'none';
   });
 
-  // Start menu zichtbaar
   controlBox.style.display = 'flex';
 
-  // Legend info toggle
   document.getElementById('legend-info-toggle').addEventListener('click', function () {
     const info = document.getElementById('legend-info');
     if (info.style.display === 'none') {
@@ -576,7 +595,6 @@
     }
   });
 
-  // Legend collapse/expand (fixed for missing legend-body)
   document.getElementById('legend-toggle').addEventListener('click', function () {
     const legend = document.getElementById('legend');
     if (legend.style.height === '30px') {
@@ -590,7 +608,6 @@
     }
   });
 
-  // Gemeente kaart
   fetch('https://raw.githubusercontent.com/geosenso92/fitness-locator-map/main/data/gemkaart24.json')
     .then(response => response.json())
     .then(gemeenteData => {
@@ -627,7 +644,6 @@
       console.error("Fout bij het laden van gemeentekaart:", error);
     });
 
-  // Tekenfunctionaliteit
   const drawnItems = new L.FeatureGroup().addTo(map);
 
   const drawControl = new L.Control.Draw({
@@ -648,15 +664,13 @@
   });
   map.addControl(drawControl);
 
-  // Export helpers
   function exportSelectedAsCSV(selected) {
     if (!selected.length) return;
     let csv = "id,MCA_score,area_km2\n";
     selected.forEach((f, i) => {
-      // Use an id if available, else index
       const areaSqMeters = turf.area(f);
       const areaKm2 = areaSqMeters / 1e6;
-      csv += (f.properties.id || i) + "," + (f.properties.MCA_score || 0) + "," + areaKm2.toFixed(4) + "\n";
+      csv += (f.properties.id || i) + "," + (f.properties.MCA_score || 0) + "," + areaKm2.toFixed(1) + "\n";
     });
     let blob = new Blob([csv], {type: "text/csv"});
     let url = URL.createObjectURL(blob);
@@ -674,7 +688,7 @@
       const areaKm2 = areaSqMeters / 1e6;
       return {
         ...f.properties,
-        area_km2: areaKm2
+        area_km2: +areaKm2.toFixed(1)
       };
     });
     let blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
@@ -687,7 +701,6 @@
     document.body.removeChild(link);
   }
 
-  // Selection summary and export
   let selectedFeatures = [];
 
   map.on(L.Draw.Event.CREATED, function (event) {
@@ -716,18 +729,22 @@
         }
       });
     }
-    // Save for export
     selectedFeatures = selected;
 
-    // Calculate and show summary
     const count = selected.length;
     const meanScore = count ? (totalScore / count) : 0;
     const areaKm2 = totalAreaSqMeters / 1e6;
 
-    document.getElementById('selection-summary').innerHTML =
-      `Aantal geselecteerde cellen: ${count}<br>
-      Totale oppervlakte: ${areaKm2.toFixed(3)} km²<br>
-      Gemiddelde MCA_score: ${meanScore.toFixed(2)}`;
+    if(count > 0){
+      controlBox.classList.add('show-stats');
+      document.getElementById('selection-summary').innerHTML =
+        `Aantal geselecteerde cellen: ${count}<br>
+        Totale oppervlakte: ${areaKm2.toFixed(1)} km²<br>
+        Gemiddelde MCA_score: ${meanScore.toFixed(2)}`;
+    } else {
+      controlBox.classList.remove('show-stats');
+      document.getElementById('selection-summary').innerHTML = '';
+    }
   });
 
   document.getElementById('export-csv-btn').addEventListener('click', () => {
