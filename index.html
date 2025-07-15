@@ -61,6 +61,8 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+      height: auto;
+      min-height: 400px;
     }
     .control-box-title {
       font-size: 14px;
@@ -270,6 +272,16 @@
       cursor: pointer;
       user-select: none;
     }
+    /* Flexbox: push the close button to the bottom */
+    .control-box {
+      display: flex;
+      flex-direction: column;
+      height: 560px; /* or auto+min-height as you like */
+    }
+    .control-box > #close-menu-btn {
+      margin-top: auto;
+      margin-bottom: 0;
+    }
   </style>
 </head>
 <body>
@@ -302,11 +314,11 @@
     <input type="range" min="0" max="1" step="0.01" id="transparency-slider" value="0.5" />
     <span id="percent-transparency">50%</span>
   </label>
-  <button id="close-menu-btn" type="button" style="margin-top: 8px;">Minimaliseer menu</button>
   <!-- Export and summary for selection -->
   <button id="export-csv-btn" type="button">Export CSV</button>
   <button id="export-json-btn" type="button">Export JSON</button>
   <div id="selection-summary"></div>
+  <button id="close-menu-btn" type="button">Minimaliseer menu</button>
 </div>
 
 <button id="toggle-menu-btn">Open locatievinder menu</button>
@@ -639,10 +651,12 @@
   // Export helpers
   function exportSelectedAsCSV(selected) {
     if (!selected.length) return;
-    let csv = "id,MCA_score\n";
+    let csv = "id,MCA_score,area_km2\n";
     selected.forEach((f, i) => {
       // Use an id if available, else index
-      csv += (f.properties.id || i) + "," + (f.properties.MCA_score || 0) + "\n";
+      const areaSqMeters = turf.area(f);
+      const areaKm2 = areaSqMeters / 1e6;
+      csv += (f.properties.id || i) + "," + (f.properties.MCA_score || 0) + "," + areaKm2.toFixed(4) + "\n";
     });
     let blob = new Blob([csv], {type: "text/csv"});
     let url = URL.createObjectURL(blob);
@@ -655,9 +669,14 @@
   }
 
   function exportSelectedAsJSON(selected) {
-    let data = selected.map(f => ({
-      ...f.properties
-    }));
+    let data = selected.map((f, i) => {
+      const areaSqMeters = turf.area(f);
+      const areaKm2 = areaSqMeters / 1e6;
+      return {
+        ...f.properties,
+        area_km2: areaKm2
+      };
+    });
     let blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
     let url = URL.createObjectURL(blob);
     let link = document.createElement('a');
@@ -678,6 +697,8 @@
 
     const drawnGeoJSON = layer.toGeoJSON();
     const selected = [];
+    let totalScore = 0;
+    let totalAreaSqMeters = 0;
     if (layer_group) {
       layer_group.eachLayer(function (featureLayer) {
         const feature = featureLayer.toGeoJSON();
@@ -688,6 +709,8 @@
             weight: 2,
             fillOpacity: 0.8,
           });
+          totalScore += feature.properties.MCA_score || 0;
+          totalAreaSqMeters += turf.area(feature);
         } else {
           featureLayer.setStyle(styleFeature(featureLayer.feature));
         }
@@ -697,12 +720,13 @@
     selectedFeatures = selected;
 
     // Calculate and show summary
-    let totalScore = 0, count = selected.length;
-    selected.forEach(f => { totalScore += f.properties.MCA_score || 0; });
-    let meanScore = count ? (totalScore / count) : 0;
+    const count = selected.length;
+    const meanScore = count ? (totalScore / count) : 0;
+    const areaKm2 = totalAreaSqMeters / 1e6;
+
     document.getElementById('selection-summary').innerHTML =
       `Aantal geselecteerde cellen: ${count}<br>
-      Som MCA_score: ${totalScore.toFixed(2)}<br>
+      Totale oppervlakte: ${areaKm2.toFixed(3)} km²<br>
       Gemiddelde MCA_score: ${meanScore.toFixed(2)}`;
   });
 
