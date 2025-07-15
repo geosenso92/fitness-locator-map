@@ -4,9 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width" />
 
+  <!-- Title and favicon -->
   <title>Dashboard Location-finder (demo: fitnesscenter)</title>
   <link rel="icon" href="data/1-aafea2ea.ico" type="image/ico" />
 
+  <!-- Leaflet and Drawing Tools -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
 
@@ -312,41 +314,9 @@
     .control-box.show-stats > #close-menu-btn {
       margin-top: 4px;
     }
-    .leaflet-draw-actions {
-      display: none !important;
-    }
-    .leaflet-draw-actions.custom-confirm {
-      display: flex !important;
-      flex-direction: column;
-      position: absolute;
-      left: 50%;
-      top: 40%;
-      transform: translate(-50%, -50%);
-      background: white;
-      padding: 18px 20px;
-      border-radius: 8px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.20);
-      font-size: 14px;
-      z-index: 3300;
-      min-width: 270px;
-      border: 1px solid #ccc;
-      align-items: center;
-      gap: 12px;
-    }
-    .leaflet-draw-actions.custom-confirm button {
+    /* Make area tooltip on draw show km² instead of ha */
+    .leaflet-draw-tooltip-subarea {
       font-size: 13px;
-      padding: 6px 14px;
-      margin: 0 8px;
-      border-radius: 5px;
-      border: 1px solid #2C3E83;
-      background: #2C3E83;
-      color: white;
-      cursor: pointer;
-    }
-    .leaflet-draw-actions.custom-confirm button.cancel {
-      background: #ddd;
-      border-color: #bbb;
-      color: #333;
     }
   </style>
 </head>
@@ -419,6 +389,7 @@
 <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
 <script>
+  // Change URL bar title (if user navigates directly via url)
   document.title = "Dashboard Location-finder (demo: fitnesscenter)";
 
   // Info icon logic
@@ -530,6 +501,7 @@
     let w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
     let w_pop = parseFloat(document.getElementById('weight-pop').value) || 0;
 
+    // Normalisatie
     const sum = w_ov + w_fit + w_pop;
     if (sum > 0) {
       w_ov /= sum;
@@ -539,6 +511,7 @@
       w_ov = 0.2; w_fit = 0.3; w_pop = 0.5;
     }
 
+    // Sliders en percentages
     document.getElementById('weight-ov').value = w_ov.toFixed(3);
     document.getElementById('percent-ov').textContent = Math.round(w_ov * 100) + '%';
 
@@ -588,11 +561,13 @@
     updateScores();
   });
 
+  // --- CLEAR SELECTION LOGIC ---
   function clearSelectionAndStats() {
     drawnItems.clearLayers();
     selectedFeatures = [];
     document.getElementById('selection-summary').innerHTML = '';
     controlBox.classList.remove('show-stats');
+    // Reset all grid cells style to normal (remove highlight)
     if (layer_group) {
       layer_group.eachLayer(function (featureLayer) {
         featureLayer.setStyle(styleFeature(featureLayer.feature));
@@ -618,6 +593,8 @@
       }));
     }
     updateScores();
+
+    // Clear selection and statistics, shrink control box
     clearSelectionAndStats();
   });
 
@@ -700,44 +677,25 @@
   const drawnItems = new L.FeatureGroup().addTo(map);
 
   // --- CUSTOM AREA FORMAT FOR DRAW TOOLTIP ---
+  // Patch Leaflet.Draw's area display to show km² instead of ha in tooltips
+  // (Override the formatArea method)
   var LDraw = window.L.Draw ? window.L.Draw : window.L.draw;
   if (LDraw && LDraw.Tooltip && LDraw.Tooltip.prototype) {
     LDraw.Tooltip.prototype._formatArea = function(area) {
+      // area in m2
       var km2 = area / 1e6;
       return km2.toLocaleString('nl-NL', {maximumFractionDigits: 2}) + ' km²';
     }
   }
 
-  // Custom Draw Control with only Remove tool, and replace default remove action with confirmation
-  class CustomDrawToolbar extends L.Control.Draw.Toolbar {
-    getModeHandlers(map) {
-      // Only Remove handler
-      return [
-        {
-          enabled: this.options.edit && this.options.edit.remove,
-          handler: new L.EditToolbar.Delete(map, {
-            featureGroup: this.options.edit.featureGroup
-          }),
-          title: L.drawLocal.edit.toolbar.buttons.remove
-        }
-      ];
-    }
-    getActions(handler) {
-      // We will override this below after instantiation
-      return [];
-    }
-  }
-
-  // Use the custom toolbar for editing only
-  const customEditControl = new CustomDrawToolbar({
-    edit: { featureGroup: drawnItems, remove: true }
-  });
-  map.addControl(customEditControl);
-
-  // Drawing control (polygon, rectangle)
+  // Set up drawing control
   const drawControl = new L.Control.Draw({
     position: "bottomright",
-    edit: false, // disables default edit handler, we use our custom one above
+    edit: {
+      featureGroup: drawnItems,
+      edit: false,
+      remove: true
+    },
     draw: {
       polygon: true,
       rectangle: true,
@@ -749,73 +707,6 @@
   });
   map.addControl(drawControl);
 
-  // Intercept the "remove" handler to show a custom confirmation dialog
-  let editToolbar;
-  map.on('draw:toolbaropened', function(e) {
-    // Find the toolbar instance (edit/remove)
-    if (!editToolbar) {
-      document.querySelectorAll('.leaflet-draw-toolbar-top').forEach(toolbarEl => {
-        if (toolbarEl.innerHTML.includes('leaflet-draw-draw-edit-remove')) {
-          editToolbar = toolbarEl;
-        }
-      });
-    }
-  });
-
-  // Intercept remove click
-  let removeHandler;
-  map.on('draw:editstart', function(e) {
-    // Remove default actions menu (if any)
-    document.querySelectorAll('.leaflet-draw-actions').forEach(el => el.style.display = 'none');
-    // Find handler
-    removeHandler = e.handler;
-    // Intercept click on map for selection
-    drawnItems.eachLayer(function(layer) {
-      layer.on('click._customRemove', function(ev) {
-        showCustomRemoveConfirm(ev.target);
-      });
-    });
-  });
-
-  // If edit mode is stopped, remove click handler
-  map.on('draw:editstop', function(e) {
-    drawnItems.eachLayer(function(layer) {
-      layer.off('click._customRemove');
-    });
-    removeCustomRemoveConfirm();
-  });
-
-  // Show custom confirmation for removal
-  function showCustomRemoveConfirm(layer) {
-    removeCustomRemoveConfirm();
-    // Create dialog
-    const dialog = document.createElement('div');
-    dialog.className = 'leaflet-draw-actions custom-confirm';
-    dialog.innerHTML = `
-      <span>Weet je zeker dat je de selectie wilt verwijderen?</span>
-      <div>
-        <button class="confirm">Verwijderen</button>
-        <button class="cancel">Annuleren</button>
-      </div>
-    `;
-    document.body.appendChild(dialog);
-    dialog.querySelector('button.confirm').onclick = function() {
-      drawnItems.removeLayer(layer);
-      clearSelectionAndStats();
-      removeCustomRemoveConfirm();
-      // Stop delete mode
-      map.fire('draw:editstop');
-    };
-    dialog.querySelector('button.cancel').onclick = function() {
-      removeCustomRemoveConfirm();
-    };
-  }
-  function removeCustomRemoveConfirm() {
-    const el = document.querySelector('.leaflet-draw-actions.custom-confirm');
-    if (el) el.remove();
-  }
-
-  // Export helpers
   function exportSelectedAsCSV(selected) {
     if (!selected.length) return;
     let csv = "id,MCA_score,area_km2\n";
@@ -898,7 +789,7 @@
     }
   });
 
-  // Also clear everything on draw:deleted (if triggered programmatically)
+  // Catch draw:deleted event (trash bin and programmatic deletes)
   map.on('draw:deleted', function() {
     clearSelectionAndStats();
   });
@@ -909,7 +800,6 @@
   document.getElementById('export-json-btn').addEventListener('click', () => {
     exportSelectedAsJSON(selectedFeatures);
   });
-
 </script>
 
 </body>
