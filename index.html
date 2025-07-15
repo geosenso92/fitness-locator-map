@@ -183,6 +183,16 @@
       width: 160px;
       text-align: center;
     }
+    .legend-info-toggle {
+  text-align: right;
+  cursor: pointer;
+}
+.legend-info {
+  font-size: 11px;
+  color: #444;
+  margin-top: 4px;
+  line-height: 1.3;
+}
   </style>
   <title>Locatievinder Fitness Center</title>
 </head>
@@ -229,21 +239,23 @@
     <div id="legend-toggle" title="Minimaliseer legenda">−</div>
   </div>
   <div class="legend-content">
-    <div class="legend-colors">
-      <div style="background:#1a9641"></div>
-      <div style="background:#a6d96a"></div>
-      <div style="background:#d9ef8b"></div>
-      <div style="background:#fee08b"></div>
-      <div style="background:#fdae61"></div>
-      <div style="background:#f46d43"></div>
-      <div style="background:#d73027"></div>
+    <div class="legend-bar">
+      <div class="color-box" style="background:#1a9641"></div>
+      <div class="color-box" style="background:#a6d96a"></div>
+      <div class="color-box" style="background:#d9ef8b"></div>
+      <div class="color-box" style="background:#fee08b"></div>
+      <div class="color-box" style="background:#fdae61"></div>
+      <div class="color-box" style="background:#f46d43"></div>
+      <div class="color-box" style="background:#d73027"></div>
     </div>
     <div class="legend-labels">
       <span class="legend-label-left">0 (niet geschikt)</span>
-      <span class="legend-label-center">5</span>
       <span class="legend-label-right">10 (uiterst geschikt)</span>
     </div>
-    <div class="legend-info">
+    <div class="legend-info-toggle" id="legend-info-toggle" title="Toon uitleg">
+      ℹ️
+    </div>
+    <div class="legend-info" id="legend-info" style="display: none;">
       De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.
     </div>
   </div>
@@ -444,6 +456,34 @@
 
   // Start met menu zichtbaar
   controlBox.style.display = 'flex';
+
+  document.getElementById('legend-toggle').addEventListener('click', function () {
+    const legend = document.getElementById('legend');
+    const info = document.querySelector('.legend-scale').parentElement;
+    const toggle = this;
+
+    if (info.style.display === 'none') {
+      info.style.display = 'block';
+      toggle.textContent = '−';
+      toggle.title = 'Minimaliseer legenda';
+    } else {
+      info.style.display = 'none';
+      toggle.textContent = '+';
+      toggle.title = 'Maximaliseer legenda';
+    }
+  });
+
+  // Toon/verberg uitleg onderaan legenda
+  document.getElementById('legend-info-toggle').addEventListener('click', function () {
+    const info = document.getElementById('legend-info');
+    if (info.style.display === 'none') {
+      info.style.display = 'block';
+      this.title = 'Verberg uitleg';
+    } else {
+      info.style.display = 'none';
+      this.title = 'Toon uitleg';
+    }
+  });
 
 fetch('https://raw.githubusercontent.com/geosenso92/fitness-locator-map/main/data/gemkaart24.json')
   .then(response => response.json())
