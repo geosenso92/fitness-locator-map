@@ -241,6 +241,12 @@
 </head>
 <body>
 
+<input type="text" id="searchInput" placeholder="Zoek gemeente..." onkeyup="filterGemeenten()">
+
+<ul id="gemeentenList" style="max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 5px;">
+  <!-- Gemeenten worden hier dynamisch geladen -->
+</ul>
+  
 <div id="header-container">
   <img id="logo" src="data/NewLogo21.png" alt="Logo" />
   <div id="page-title">Locatievinder Fitnesscentra</div>
@@ -566,6 +572,42 @@ fetch('https://raw.githubusercontent.com/geosenso92/fitness-locator-map/main/dat
   .catch(error => {
     console.error("Fout bij het laden van gemeentekaart:", error);
   });
+
+ const geojsonData = {
+    "features": [
+      {"properties": {"gemeentenaam": "Amsterdam"}},
+      {"properties": {"gemeentenaam": "Rotterdam"}},
+      {"properties": {"gemeentenaam": "Utrecht"}},
+      {"properties": {"gemeentenaam": "Buitenland"}}
+    ]
+  };
+
+  const gemeentenData = geojsonData.features.map(f => f.properties.gemeentenaam);
+  const uniekeGemeenten = [...new Set(gemeentenData)];
+
+  const gemeentenList = document.getElementById('gemeentenList');
+
+  function vulGemeentenLijst() {
+    gemeentenList.innerHTML = '';
+    uniekeGemeenten.forEach(gemeente => {
+      const li = document.createElement('li');
+      li.textContent = gemeente;
+      li.style.cursor = 'pointer';
+      gemeentenList.appendChild(li);
+    });
+  }
+
+  function filterGemeenten() {
+    const filter = document.getElementById('searchInput').value.toLowerCase();
+    const items = gemeentenList.getElementsByTagName('li');
+    for (let i = 0; i < items.length; i++) {
+      const txtValue = items[i].textContent || items[i].innerText;
+      items[i].style.display = txtValue.toLowerCase().indexOf(filter) > -1 ? '' : 'none';
+    }
+  }
+
+  // Vul de lijst meteen bij het laden van de pagina
+  vulGemeentenLijst();
 
 </script>
 </body>
