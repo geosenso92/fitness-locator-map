@@ -163,6 +163,10 @@
     .legend-scale div {
       flex: 1;
     }
+    .color-box {
+  flex: 1;
+  height: 16px;
+    }
     .legend-labels {
       display: flex;
       justify-content: space-between;
@@ -234,12 +238,12 @@
 <div id="map"></div>
 
 <div class="legend" id="legend">
-  <div class="legend-header">
-    <span>Suitability index</span>
-    <div id="legend-toggle" title="Minimaliseer legenda">−</div>
+  <div class="legend-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <span class="legend-title">Suitability index</span>
+    <div id="legend-toggle" title="Minimaliseer legenda" style="cursor:pointer;">−</div>
   </div>
-  <div class="legend-content">
-    <div class="legend-bar">
+  <div class="legend-body" id="legend-body">
+    <div class="legend-bar legend-scale">
       <div class="color-box" style="background:#1a9641"></div>
       <div class="color-box" style="background:#a6d96a"></div>
       <div class="color-box" style="background:#d9ef8b"></div>
@@ -457,21 +461,20 @@
   // Start met menu zichtbaar
   controlBox.style.display = 'flex';
 
-  document.getElementById('legend-toggle').addEventListener('click', function () {
-    const legend = document.getElementById('legend');
-    const info = document.querySelector('.legend-scale').parentElement;
-    const toggle = this;
+document.getElementById('legend-toggle').addEventListener('click', function () {
+  const legendBody = document.getElementById('legend-body');
+  const toggle = this;
 
-    if (info.style.display === 'none') {
-      info.style.display = 'block';
-      toggle.textContent = '−';
-      toggle.title = 'Minimaliseer legenda';
-    } else {
-      info.style.display = 'none';
-      toggle.textContent = '+';
-      toggle.title = 'Maximaliseer legenda';
-    }
-  });
+  if (legendBody.style.display === 'none') {
+    legendBody.style.display = 'block';
+    toggle.textContent = '−';
+    toggle.title = 'Minimaliseer legenda';
+  } else {
+    legendBody.style.display = 'none';
+    toggle.textContent = '+';
+    toggle.title = 'Maximaliseer legenda';
+  }
+});
 
   // Toon/verberg uitleg onderaan legenda
   document.getElementById('legend-info-toggle').addEventListener('click', function () {
