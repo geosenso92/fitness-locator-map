@@ -290,16 +290,15 @@
   <div class="legend-header" style="display: flex; justify-content: space-between; align-items: center;">
     <span class="legend-title">Suitability index</span>
   </div>
-  <div class="legend-body" id="legend-body">
-    <div class="legend-bar legend-scale">
-      <div class="color-box" style="background:#1a9641"></div>
-      <div class="color-box" style="background:#a6d96a"></div>
-      <div class="color-box" style="background:#d9ef8b"></div>
-      <div class="color-box" style="background:#fee08b"></div>
-      <div class="color-box" style="background:#fdae61"></div>
-      <div class="color-box" style="background:#f46d43"></div>
-      <div class="color-box" style="background:#d73027"></div>
-    </div>
+ <div class="legend-bar legend-scale">
+  <div class="color-box" style="background:#d73027"></div>  <!-- donker rood -->
+  <div class="color-box" style="background:#f46d43"></div>
+  <div class="color-box" style="background:#fdae61"></div>
+  <div class="color-box" style="background:#fee08b"></div>
+  <div class="color-box" style="background:#d9ef8b"></div>
+  <div class="color-box" style="background:#a6d96a"></div>
+  <div class="color-box" style="background:#1a9641"></div>  <!-- donker groen -->
+</div>
     <div class="legend-labels">
       <span class="legend-label-left">0 </span>
       <span class="legend-label-right">10</span>
@@ -354,12 +353,12 @@
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
-  function getColor(score) {
-    return score > 6 ? '#1a9641' :
-           score > 4 ? '#a6d96a' :
-           score > 2 ? '#fdae61' :
-                       '#d7191c';
-  }
+ function getColor(score) {
+  return score > 6 ? '#1a9641' :   // >6 = donkergroen (hoog)
+         score > 4 ? '#a6d96a' :   // >4 = lichtgroen
+         score > 2 ? '#fdae61' :   // >2 = oranje
+                     '#d7191c';    // <=2 = rood (laag)
+}
 
   function styleFeature(feature) {
     return {
