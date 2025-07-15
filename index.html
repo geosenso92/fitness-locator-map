@@ -341,7 +341,6 @@
       mouseover: highlightFeature,
       mouseout: resetHighlight
     });
-    layer.bindPopup('Suitability index: ' + ((feature.properties.MCA_score || 0).toFixed(2)));
   }
 
   // Laden van MCA gridlaag en toevoegen aan map
@@ -393,8 +392,11 @@
       const newScore = (ov * w_ov) + (fit * w_fit) + (pop * w_pop);
       p.MCA_score = newScore;
       layer.setStyle({ fillColor: getColor(newScore), fillOpacity: currentTransparency });
-      layer.unbindPopup();
-      layer.bindPopup('Suitability index: ' + newScore.toFixed(2));
+    if (layer.getPopup()) {
+  layer.setPopupContent('Suitability index: ' + newScore.toFixed(2));
+} else {
+  layer.bindPopup('Suitability index: ' + newScore.toFixed(2));
+}
     });
   }
 
