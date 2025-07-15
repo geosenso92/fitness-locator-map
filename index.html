@@ -432,7 +432,6 @@
   // Start met menu zichtbaar
   controlBox.style.display = 'flex';
 
-// Gemeentekaart laag (achtergrond)
 fetch('https://raw.githubusercontent.com/geosenso92/fitness-locator-map/main/data/gemkaart24.json')
   .then(response => response.json())
   .then(data => {
@@ -443,9 +442,11 @@ fetch('https://raw.githubusercontent.com/geosenso92/fitness-locator-map/main/dat
         fillOpacity: 0
       },
       onEachFeature: function (feature, layer) {
-        const gemeentenaam = feature.properties.gemeentenaam || "Onbekend";
-        if (gemeentenaam.toLowerCase() !== "utrecht") {
-          layer.bindPopup("Gemeente: " + gemeentenaam);
+        const naam = feature.properties.Gemeentenaam;
+
+        // Alleen popup tonen als het NIET gemeente Utrecht is
+        if (naam && naam.toLowerCase() !== "utrecht") {
+          layer.bindPopup("Gemeente: " + naam);
         }
       }
     }).addTo(map);
@@ -453,24 +454,8 @@ fetch('https://raw.githubusercontent.com/geosenso92/fitness-locator-map/main/dat
   .catch(error => {
     console.error("Fout bij het laden van gemeentekaart:", error);
   });
-
-// Gridlaag met MCA scores (bovenop)
-let layer_group;
-let currentTransparency = 0.5;
-
-fetch('data/gridlayer_mca_fitness.geojson')
-  .then(res => res.json())
-  .then(data => {
-    layer_group = L.geoJSON(data, {
-      style: styleFeature,
-      onEachFeature: popFeature
-    }).addTo(map);
-    updateScores();
-  })
-  .catch(e => {
-    alert("Fout bij het laden van GeoJSON: " + e);
   });
-  
+
 </script>
 </body>
 </html>
