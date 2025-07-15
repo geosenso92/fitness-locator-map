@@ -223,16 +223,29 @@
 
 <div id="map"></div>
 
-<div class="legend">
-  <div class="legend-title">Suitability index</div>
-  <div class="legend-scale">
-    <div style="background:#d7191c"></div>
-    <div style="background:#fdae61"></div>
-    <div style="background:#a6d96a"></div>
-    <div style="background:#1a9641"></div>
+<div class="legend" id="legend">
+  <div class="legend-header">
+    <span>Suitability index</span>
+    <div id="legend-toggle" title="Minimaliseer legenda">−</div>
   </div>
-  <div class="legend-labels">
-    <span>1</span><span>3</span><span>6</span><span>10</span>
+  <div class="legend-content">
+    <div class="legend-colors">
+      <div style="background:#1a9641"></div>
+      <div style="background:#a6d96a"></div>
+      <div style="background:#d9ef8b"></div>
+      <div style="background:#fee08b"></div>
+      <div style="background:#fdae61"></div>
+      <div style="background:#f46d43"></div>
+      <div style="background:#d73027"></div>
+    </div>
+    <div class="legend-labels">
+      <span class="legend-label-left">0 (niet geschikt)</span>
+      <span class="legend-label-center">5</span>
+      <span class="legend-label-right">10 (uiterst geschikt)</span>
+    </div>
+    <div class="legend-info">
+      De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.
+    </div>
   </div>
 </div>
 
