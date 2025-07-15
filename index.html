@@ -285,6 +285,7 @@
 <button id="toggle-menu-btn">Open locatievinder menu</button>
 
 <div id="map"></div>
+<div id="map" style="height: 600px;"></div>
 
 <div class="legend" id="legend">
   <div id="legend-info-toggle" title="De suitability index is het resultaat van de factoren waarbij verschillende wegingen kunnen worden toegepast. 0 = niet geschikt | 10 = uiterst geschikt">ℹ️</div>
@@ -584,6 +585,60 @@ fetch('https://raw.githubusercontent.com/geosenso92/fitness-locator-map/main/dat
     console.error("Fout bij het laden van gemeentekaart:", error);
   });
 
+const drawnItems = new L.FeatureGroup().addTo(map);
+
+// Tekenfunctionaliteit
+const drawControl = new L.Control.Draw({
+  edit: {
+    featureGroup: drawnItems,
+    edit: false,
+    remove: true
+  },
+  draw: {
+    polygon: true,
+    rectangle: true,
+    polyline: false,
+    circle: false,
+    marker: false,
+    circlemarker: false
+  }
+});
+map.addControl(drawControl);
+
+// Event: als gebruiker iets tekent
+map.on(L.Draw.Event.CREATED, function (event) {
+  const layer = event.layer;
+  drawnItems.clearLayers(); // Verwijder vorige selectie
+  drawnItems.addLayer(layer); // Voeg nieuwe toe
+
+  const drawnGeoJSON = layer.toGeoJSON();
+  const selected = [];
+
+  geojsonLayer.eachLayer(function (featureLayer) {
+    const feature = featureLayer.toGeoJSON();
+    if (turf.booleanIntersects(drawnGeoJSON, feature)) {
+      selected.push(feature);
+      featureLayer.setStyle({ color: 'red' }); // Highlight selectie
+    } else {
+      featureLayer.setStyle({ color: '#3388ff' }); // Reset stijl
+    }
+  });
+
+  console.log("Geselecteerde features:", selected);
+});
+
 </script>
+
+  <!-- Leaflet CSS en JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Leaflet Draw -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+<script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
+<!-- Turf.js -->
+<script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+  
 </body>
 </html>
