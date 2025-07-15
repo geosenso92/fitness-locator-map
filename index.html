@@ -42,42 +42,48 @@
       z-index: 0;
     }
     .control-box {
-      position: absolute;
-      top: 90px;
-      left: 10px;
-      background: rgba(255,255,255,0.95);
-      padding: 15px 15px 20px 15px;
-      border-radius: 8px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.3);
-      z-index: 1100;
-      width: 320px;
-      font-size: 12px;
-      user-select: none;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-    .control-box label {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 0;
-    }
-    .control-box label span {
-      flex-shrink: 0;
-      width: 38px;
-      text-align: right;
-      font-weight: 600;
-      user-select: none;
-    }
-    .control-box input[type=range] {
-      flex-grow: 1;
-      cursor: pointer;
-      height: 18px;
-      margin-left: 0;
-      margin-right: 0;
-    }
+  position: absolute;
+  top: 90px;
+  left: 10px;
+  background: rgba(255,255,255,0.95);
+  padding: 10px 12px 15px 12px; /* minder padding */
+  border-radius: 8px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.3);
+  z-index: 1100;
+  width: 320px;
+  font-size: 12px;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* minder afstand tussen items */
+}
+.control-box-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 6px; /* minder ruimte onder titel */
+  color: #2C3E83;
+}
+.control-box label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px; /* minder gap tussen label tekst en input */
+  margin-bottom: 0;
+}
+.control-box label span {
+  flex-shrink: 0;
+  width: 38px;
+  text-align: right;
+  font-weight: 600;
+  user-select: none;
+}
+.control-box input[type=range] {
+  flex-grow: 1;
+  cursor: pointer;
+  height: 18px;
+  margin-left: 0;
+  margin-right: 0;
+}
     .control-box-title {
   font-size: 16px;
   font-weight: bold;
