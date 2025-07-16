@@ -353,15 +353,15 @@
   <button id="export-csv-btn" type="button">Export CSV</button>
   <button id="export-json-btn" type="button">Export JSON</button>
   <div id="selection-summary"></div>
-  <button id="close-menu-btn" type="button">Minimaliseer menu</button>
+  <button id="close-menu-btn" type="button">Toggle menu</button>
 </div>
 
-<button id="toggle-menu-btn">Open locatievinder menu</button>
+<button id="toggle-menu-btn">Open Location Finder menu</button>
 
 <div id="map"></div>
 
 <div class="legend" id="legend">
-  <div id="legend-info-toggle" title="De suitability index is het resultaat van de factoren waarbij verschillende wegingen kunnen worden toegepast. 0 = niet geschikt | 10 = uiterst geschikt">ℹ️</div>
+  <div id="legend-info-toggle" title="The suitability index is the result of the factors where different weightings can be applied. 0 = not suitable | 10 = highly suitable">ℹ️</div>
   <div id="legend-toggle" title="Toggle legend">−</div>
   <div class="legend-title" style="font-size: 14px; text-align: center; margin-bottom: 5px;">Legend</div>
   <div class="legend-header" style="display: flex; justify-content: space-between; align-items: center;">
@@ -381,7 +381,7 @@
     <span class="legend-label-right">10</span>
   </div>
   <div class="legend-info" id="legend-info" style="display: none;">
-    De suitability index is het resultaat van de factoren waarbij verschillende wegingen kunnen worden toegepast. 0 = niet geschikt | 10 = uiterst geschikt
+    The suitability index is the result of the factors where different weightings can be applied. 0 = not suitable | 10 = highly suitable
   </div>
 </div>
 
@@ -390,7 +390,7 @@
 <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
 <script>
   // Change URL bar title (if user navigates directly via url)
-  document.title = "Dashboard Location-finder (demo: fitnesscenter)";
+  document.title = "Dashboard Location Finder (demo: fitnesscenter)";
 
   // Info icon logic
   const infoIcon = document.getElementById('info-icon');
@@ -671,7 +671,7 @@
       }).addTo(map);
     })
     .catch(error => {
-      console.error("Fout bij het laden van gemeentekaart:", error);
+      console.error("Error loading municipal map:", error);
     });
 
   const drawnItems = new L.FeatureGroup().addTo(map);
@@ -781,9 +781,9 @@
     if(count > 0){
       controlBox.classList.add('show-stats');
       document.getElementById('selection-summary').innerHTML =
-        `Aantal geselecteerde cellen: ${count}<br>
-        Totale oppervlakte: ${areaKm2.toFixed(1)} km²<br>
-        Gemiddelde MCA_score: ${meanScore.toFixed(2)}`;
+        Total selected cells: ${count}<br>
+        Total area: ${areaKm2.toFixed(1)} km²<br>
+        Average MCA score: ${meanScore.toFixed(2)}`;
     } else {
       clearSelectionAndStats();
     }
