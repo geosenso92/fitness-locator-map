@@ -5,7 +5,7 @@
   <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width" />
 
   <!-- Title and favicon -->
-  <title>Dashboard Location-finder (demo: fitnesscenter)</title>
+  <title>Dashboard location-finder (demo: gym)</title>
   <link rel="icon" href="data/1-aafea2ea.ico" type="image/ico" />
 
   <!-- Leaflet and Drawing Tools -->
@@ -324,46 +324,46 @@
 
 <div id="header-container">
   <img id="logo" src="data/NewLogo21.png" alt="Logo" />
-  <div id="page-title">Dashboard Location-finder (demo: fitnesscenter)</div>
+  <div id="page-title">Dashboard Location-finder (Demo: Gym)</div>
 </div>
 
 <div class="control-box" id="control-box">
-  <h2 class="control-box-title">Wegingsfactoren Multicriteria Analyse (MCA)</h2>
-  <label for="weight-fitness">Nabijheid fitnesscentra:
+  <h2 class="control-box-title">Factor Weighting (MCA)</h2>
+  <label for="weight-fitness">Proximity to gym:
     <input type="range" min="0" max="1" step="0.01" id="weight-fitness" value="0.30" />
     <span id="percent-fitness">30%</span>
   </label>
-  <label for="weight-ov">OV bereikbaarheid:
+  <label for="weight-ov">Public transport:
     <input type="range" min="0" max="1" step="0.01" id="weight-ov" value="0.20" />
     <span id="percent-ov">20%</span>
   </label>
-  <label for="weight-pop">Bevolkingsdichtheid:
+  <label for="weight-pop">Population density:
     <input type="range" min="0" max="1" step="0.01" id="weight-pop" value="0.50" />
     <span id="percent-pop">50%</span>
   </label>
   <button id="update-btn" type="button">Update suitability index
     <div id="info-icon">i</div>
-    <div id="info-text">De suitability index is het resultaat van de MCA waarbij verschillende wegingen kunnen worden toegepast.</div>
+    <div id="info-text">The suitability index is the result of the Multicriteria Analysis (MCA), in which different weightings can be applied.</div>
   </button>
   <button id="reset-btn" type="button">Reset</button>
-  <label id="transparency-label" for="transparency-slider">Raster transparantie:
+  <label id="transparency-label" for="transparency-slider">Raster transparency:
     <input type="range" min="0" max="1" step="0.01" id="transparency-slider" value="0.5" />
     <span id="percent-transparency">50%</span>
   </label>
   <button id="export-csv-btn" type="button">Export CSV</button>
   <button id="export-json-btn" type="button">Export JSON</button>
   <div id="selection-summary"></div>
-  <button id="close-menu-btn" type="button">Minimaliseer menu</button>
+  <button id="close-menu-btn" type="button">Collapse menu</button>
 </div>
 
-<button id="toggle-menu-btn">Open locatievinder menu</button>
+<button id="toggle-menu-btn">Open menu</button>
 
 <div id="map"></div>
 
 <div class="legend" id="legend">
-  <div id="legend-info-toggle" title="De suitability index is het resultaat van de factoren waarbij verschillende wegingen kunnen worden toegepast. 0 = niet geschikt | 10 = uiterst geschikt">ℹ️</div>
-  <div id="legend-toggle" title="Minimaliseer legenda">−</div>
-  <div class="legend-title" style="font-size: 14px; text-align: center; margin-bottom: 5px;">Legenda</div>
+  <div id="legend-info-toggle" title="The suitability index is the result of the Multicriteria Analysis (MCA), in which different weightings can be applied. 0 = Not suitable | 10 = Perfectly suitable">ℹ️</div>
+  <div id="legend-toggle" title="Toggle legend">−</div>
+  <div class="legend-title" style="font-size: 14px; text-align: center; margin-bottom: 5px;">Legend</div>
   <div class="legend-header" style="display: flex; justify-content: space-between; align-items: center;">
     <span class="legend-title">Suitability index</span>
   </div>
@@ -381,8 +381,7 @@
     <span class="legend-label-right">10</span>
   </div>
   <div class="legend-info" id="legend-info" style="display: none;">
-    De suitability index is het resultaat van de factoren waarbij verschillende wegingen kunnen worden toegepast. 0 = niet geschikt | 10 = uiterst geschikt
-  </div>
+    The suitability index is the result of the Multicriteria Analysis (MCA), in which different weightings can be applied. 0 = not suitable | 10 = Perfectly suitable
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -390,7 +389,7 @@
 <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
 <script>
   // Change URL bar title (if user navigates directly via url)
-  document.title = "Dashboard Location-finder (demo: fitnesscenter)";
+  document.title = "Dashboard Location-finder (Demo: Gym)";
 
   // Info icon logic
   const infoIcon = document.getElementById('info-icon');
@@ -478,7 +477,7 @@
   });
 
   const overlays = {
-    "Satelliet": satelliteLayer
+    "Satellite": satelliteLayer
   };
 
   L.control.layers(null, overlays, { position: 'topright' }).addTo(map);
@@ -618,10 +617,10 @@
     const info = document.getElementById('legend-info');
     if (info.style.display === 'none') {
       info.style.display = 'block';
-      this.title = 'Verberg uitleg';
+      this.title = 'Hide info';
     } else {
       info.style.display = 'none';
-      this.title = 'Toon uitleg';
+      this.title = 'Show info';
     }
   });
 
@@ -630,11 +629,11 @@
     if (legend.style.height === '30px') {
       legend.style.height = '';
       this.textContent = '−';
-      this.title = 'Minimaliseer legenda';
+      this.title = 'Toggle legend';
     } else {
       legend.style.height = '30px';
       this.textContent = '+';
-      this.title = 'Maximaliseer legenda';
+      this.title = 'Show full legend';
     }
   });
 
@@ -781,9 +780,9 @@
     if(count > 0){
       controlBox.classList.add('show-stats');
       document.getElementById('selection-summary').innerHTML =
-        `Aantal geselecteerde cellen: ${count}<br>
-        Totale oppervlakte: ${areaKm2.toFixed(1)} km²<br>
-        Gemiddelde MCA_score: ${meanScore.toFixed(2)}`;
+        `Total selected cells: ${count}<br>
+        Total area: ${areaKm2.toFixed(1)} km²<br>
+        Average suitability score: ${meanScore.toFixed(2)}`;
     } else {
       clearSelectionAndStats();
     }
