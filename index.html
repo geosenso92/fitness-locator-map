@@ -97,6 +97,54 @@
       margin-left: 0;
       margin-right: 0;
     }
+    .control-box label.slider-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.control-box label.slider-label > input[type=range] {
+  flex-grow: 1;
+}
+
+.control-box label.slider-label > span {
+  flex-shrink: 0;
+  width: 38px;
+  text-align: right;
+  font-weight: 600;
+  user-select: none;
+}
+
+.layer-toggle {
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-left: 8px;
+}
+
+.layer-toggle::after {
+  content: attr(title);
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.75);
+  color: #fff;
+  padding: 3px 6px;
+  font-size: 10px;
+  border-radius: 3px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease-in-out;
+  z-index: 10;
+}
+
+.layer-toggle:hover::after {
+  opacity: 1;
+}
     #transparency-label {
       margin-top: 10px;
       user-select: none;
@@ -329,10 +377,13 @@
 
 <div class="control-box" id="control-box">
   <h2 class="control-box-title">Weighting factors (MCA)</h2>
-  <label for="weight-fitness">Proximity to gym(s):
-    <input type="range" min="0" max="1" step="0.01" id="weight-fitness" value="0.30" />
-    <span id="percent-fitness">30%</span>
-  </label>
+
+<div class="control-row">
+  <label for="weight-fitness">Proximity to gym(s):</label>
+  <input type="range" min="0" max="1" step="0.01" id="weight-fitness" value="0.30" />
+  <span id="percent-fitness">30%</span>
+  <input type="checkbox" id="toggle-gyms" class="layer-toggle" title="Show gym locations" />
+</div>
   
   <div id="layer-controls">
   <label>
@@ -363,10 +414,16 @@
     <div id="info-text">The suitability index is the result of factors in which weighting are applied.</div>
   </button>
   <button id="reset-btn" type="button">Reset</button>
+  
   <label id="transparency-label" for="transparency-slider">Raster transparency:
     <input type="range" min="0" max="1" step="0.01" id="transparency-slider" value="0.5" />
     <span id="percent-transparency">50%</span>
   </label>
+  
+<label>
+  <input type="checkbox" id="toggle-grid" class="layer-toggle" title="Show grid layer">
+</label>
+  
   <button id="export-csv-btn" type="button">Export CSV</button>
   <button id="export-json-btn" type="button">Export JSON</button>
   <div id="selection-summary"></div>
@@ -506,7 +563,9 @@
       layer_group = L.geoJSON(data, {
         style: styleFeature,
         onEachFeature: popFeature
-      }).addTo(map);
+      });
+      if (document.getElementById('toggle-grid').checked) {
+      layer_group.addTo(map);
       updateScores();
     })
     .catch(e => {
@@ -716,6 +775,20 @@ document.getElementById('toggle-bus').addEventListener('change', function () {
   }
 });
 
+document.getElementById('toggle-grid').addEventListener('change', function () {
+  if (this.checked) {
+    if (layer_group) {
+      layer_group.addTo(map);
+      updateScores();
+    }
+  } else {
+    if (map.hasLayer(layer_group)) {
+      map.removeLayer(layer_group);
+      // Optional: call updateScores() here if needed when hidden
+    }
+  }
+});
+  
   fetch('https://raw.githubusercontent.com/geosenso92/fitness-locator-map/main/data/gemkaart24.json')
     .then(response => response.json())
     .then(gemeenteData => {
