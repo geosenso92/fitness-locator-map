@@ -403,6 +403,7 @@
     }
   </style>
 </head>
+  
 <body>
 
 <div id="header-container">
@@ -436,18 +437,18 @@
     <div id="info-text">The suitability index is the result of factors in which weighting are applied.</div>
   </button>
   <button id="reset-btn" type="button">Reset</button>
+
+<div class="control-row">
+  <label class="inline-checkbox">
+    <input type="checkbox" id="toggle-grid" class="layer-toggle" title="Show grid layer" checked />
+    Suitability layer
+  </label>
+</div>
   
   <label id="transparency-label" for="transparency-slider">Raster transparency:
     <input type="range" min="0" max="1" step="0.01" id="transparency-slider" value="0.5" />
     <span id="percent-transparency">50%</span>
   </label>
-  
-<div class="control-row">
-  <label class="inline-checkbox">
-    <input type="checkbox" id="toggle-grid" class="layer-toggle" title="Show grid layer" checked />
-    Gemeente Utrecht
-  </label>
-</div>
   
 <div id="selection-summary"></div>
   
