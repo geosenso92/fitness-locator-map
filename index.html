@@ -974,14 +974,27 @@ document.getElementById('toggle-grid').addEventListener('change', function () {
   map.on('draw:deleted', function() {
     clearSelectionAndStats();
   });
+document.addEventListener('DOMContentLoaded', () => {
+  const exportBtn = document.getElementById('export-btn');
+  const exportOptions = document.getElementById('export-options');
 
+  exportBtn.addEventListener('click', () => {
+    exportOptions.classList.toggle('hidden');
+  });
+  document.addEventListener('click', e => {
+    if (!exportBtn.contains(e.target) && !exportOptions.contains(e.target)) {
+      exportOptions.classList.add('hidden');
+    }
+  });
   document.getElementById('export-csv-btn').addEventListener('click', () => {
-    exportSelectedAsCSV(selectedFeatures);
+    exportOptions.classList.add('hidden');
+    // call your CSV export function here
   });
   document.getElementById('export-json-btn').addEventListener('click', () => {
-    exportSelectedAsJSON(selectedFeatures);
+    exportOptions.classList.add('hidden');
+    // call your JSON export function here
   });
+});
 </script>
-
 </body>
 </html>
