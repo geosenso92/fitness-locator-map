@@ -132,6 +132,14 @@
         <input type="checkbox" id="toggle-grid" class="layer-toggle" title="Show grid layer" checked />
         Suitability layer
       </label>
+      
+      <div class="control-row">
+  <label class="inline-checkbox">
+    <input type="checkbox" id="toggle-buildings" class="layer-toggle" title="Show buildings layer" />
+    Gebouwen laag
+  </label>
+        
+</div>
     </div>
     <label id="transparency-label" for="transparency-slider">Raster transparency:
       <input type="range" min="0" max="1" step="0.01" id="transparency-slider" value="0.5" />
@@ -223,6 +231,46 @@
         onEachFeature: (f,layer)=>layer.bindPopup(`<strong>${f.properties.name||"Busstop"}</strong>`)
       });
     });
+
+    let gebouwenLayer = null;
+
+// Functie om de gebouwenlaag te laden
+function loadGebouwenLayer() {
+  if (!gebouwenLayer) {
+    gebouwenLayer = L.geoJSON(null, {
+      // hier kun je opties toevoegen, zoals style en onEachFeature
+      style: {
+        color: '#3388ff',
+        weight: 2,
+        opacity: 0.6,
+        fillOpacity: 0.3,
+      }
+    });
+
+    // laad de GeoJSON data
+    fetch('Gebouwen.geojson')
+      .then(response => response.json())
+      .then(data => {
+        gebouwenLayer.addData(data);
+      })
+      .catch(err => console.error('Fout bij laden gebouwenlaag:', err));
+  }
+}
+
+// Eventlistener voor de checkbox
+document.getElementById('toggle-buildings').addEventListener('change', function(e) {
+  if (e.target.checked) {
+    // laad de laag als die nog niet geladen is
+    loadGebouwenLayer();
+    // voeg toe aan de kaart
+    gebouwenLayer.addTo(map);
+  } else {
+    // verwijder laag van de kaart
+    if (gebouwenLayer) {
+      map.removeLayer(gebouwenLayer);
+    }
+  }
+});
 
     // GRID LAYER (SUITABILITY)
     let currentTransparency = 0.5;
