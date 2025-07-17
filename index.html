@@ -309,7 +309,7 @@
       z-index: 1200;
     }
     .leaflet-control-layers-overlays label {
-  font-size: 10px;
+  font-size: 12px;
 }
 .leaflet-control-layers-overlays input[type="checkbox"] {
   width: 12px;
@@ -328,49 +328,62 @@
   vertical-align: middle;
   margin-right: 8px;           /* ruimte tussen tekst en knop */
 }
-
-/* Verwijder oude dropdown container styling */
-#export-dropdown {
-  position: static;            /* geen fixed meer */
-  right: auto;
-  bottom: auto;
-  z-index: auto;
-  user-select: auto;
-  display: inline-block;       /* zodat het inline kan naast #selection-summary */
+#stats-export-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f9f9f9;
+  border-radius: 6px;
+  padding: 8px;
+  margin-top: 8px;
+  font-size: 13px;
+  border: 1px solid #ddd;
+  color: #222;
 }
 
-/* Maak export knop klein, iconisch, zonder achtergrondkleur */
 #export-btn {
-  display: none;               /* standaard niet zichtbaar */
-  cursor: pointer;
   background: none;
   border: none;
-  padding: 0;
-  vertical-align: middle;
+  cursor: pointer;
   color: #2C3E83;
-  width: 20px;
-  height: 20px;
+  position: relative;
 }
 
-/* Hover kleur voor knop */
-#export-btn:hover {
-  color: #1a2a5a;
-}
-
-/* SVG icoon binnen knop altijd passend */
 #export-btn svg {
-  width: 100%;
-  height: 100%;
-  fill: currentColor;
+  vertical-align: middle;
+  pointer-events: none;
 }
 
-/* Dropdown menu styling niet meer nodig, dus kan weg */
-.export-options {
-  display: none;
+/* Dropdown menu */
+#export-options {
+  position: absolute;
+  top: 28px;
+  right: 0;
+  background: white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  z-index: 1000;
 }
 
-/* Hide dropdown by default */
-.hidden {
+#export-options button {
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 13px;
+  color: #2C3E83;
+  border-bottom: 1px solid #eee;
+}
+
+#export-options button:last-child {
+  border-bottom: none;
+}
+
+#export-options.hidden {
   display: none;
 }
 
@@ -464,21 +477,23 @@
     <span id="percent-transparency">50%</span>
   </label>
   
-<div id="selection-summary"></div>
-<button id="export-btn" style="display:none;" title="Export selection">
-  <!-- Icon, bijvoorbeeld een download SVG -->
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-    <path d="M.5 9.9v4.6A1.5 1.5 0 002 16h12a1.5 1.5 0 001.5-1.5v-4.6a.5.5 0 00-1 0v4.6a.5.5 0 01-.5.5H2a.5.5 0 01-.5-.5v-4.6a.5.5 0 00-1 0zM7.646 10.854a.5.5 0 00.708 0l3-3a.5.5 0 00-.708-.708L8.5 9.293V1.5a.5.5 0 00-1 0v7.793L5.354 7.146a.5.5 0 00-.708.708l3 3z"/>
-  </svg>
-</button>
-  
-<div id="export-dropdown" class="export-dropdown">
-  <button id="export-btn">Export</button>
-  <div id="export-options" class="export-options hidden">
-    <button id="export-csv-btn" type="button">Export CSV</button>
-    <button id="export-json-btn" type="button">Export JSON</button>
+<div id="stats-export-container" style="display:none;">
+  <div id="selection-summary"></div>
+  <div style="position: relative;">
+    <button id="export-btn" title="Export selection">
+      <!-- download SVG icon -->
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M.5 9.9v4.6A1.5 1.5 0 002 16h12a1.5 1.5 0 001.5-1.5v-4.6a.5.5 0 00-1 0v4.6a.5.5 0 01-.5.5H2a.5.5 0 01-.5-.5v-4.6a.5.5 0 00-1 0zM7.646 10.854a.5.5 0 00.708 0l3-3a.5.5 0 00-.708-.708L8.5 9.293V1.5a.5.5 0 00-1 0v7.793L5.354 7.146a.5.5 0 00-.708.708l3 3z"/>
+      </svg>
+    </button>
+    <div id="export-options" class="hidden">
+      <button id="export-json-btn">Export GeoJSON</button>
+      <button id="export-csv-btn">Export CSV</button>
+    </div>
   </div>
 </div>
+
+<div>
   <button id="close-menu-btn" type="button">Toggle menu</button>
 </div>
 
@@ -983,45 +998,44 @@ document.getElementById('toggle-grid').addEventListener('change', function () {
     const meanScore = count ? (totalScore / count) : 0;
     const areaKm2 = totalAreaSqMeters / 1e6;
 
-    if(count > 0){
+if(count > 0){
   controlBox.classList.add('show-stats');
+  const container = document.getElementById('stats-export-container');
+  container.style.display = 'flex';
   document.getElementById('selection-summary').innerHTML = `
     Total selected cells: ${count}<br>
     Total area: ${areaKm2.toFixed(1)} km²<br>
     Average MCA score: ${meanScore.toFixed(2)}
   `;
-  document.getElementById('export-btn').style.display = 'inline-block';  // knop tonen
 } else {
   clearSelectionAndStats();
-  document.getElementById('export-btn').style.display = 'none';        // knop verbergen
+  document.getElementById('stats-export-container').style.display = 'none';
 }
-  });
 
-  // Catch draw:deleted event (trash bin and programmatic deletes)
-  map.on('draw:deleted', function() {
-    clearSelectionAndStats();
-  });
 document.addEventListener('DOMContentLoaded', () => {
   const exportBtn = document.getElementById('export-btn');
   const exportOptions = document.getElementById('export-options');
 
-  exportBtn.addEventListener('click', () => {
+  exportBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // voorkom dat document click ook afgaat
     exportOptions.classList.toggle('hidden');
   });
-  document.addEventListener('click', e => {
-    if (!exportBtn.contains(e.target) && !exportOptions.contains(e.target)) {
-      exportOptions.classList.add('hidden');
-    }
-  });
-  document.getElementById('export-csv-btn').addEventListener('click', () => {
+
+  document.addEventListener('click', () => {
     exportOptions.classList.add('hidden');
-    // call your CSV export function here
   });
+
   document.getElementById('export-json-btn').addEventListener('click', () => {
     exportOptions.classList.add('hidden');
-    // call your JSON export function here
+    exportGeoJSON(selectedFeatures);
+  });
+
+  document.getElementById('export-csv-btn').addEventListener('click', () => {
+    exportOptions.classList.add('hidden');
+    exportCSV(selectedFeatures);
   });
 });
+
 </script>
 </body>
 </html>
