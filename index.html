@@ -333,6 +333,7 @@
     <input type="range" min="0" max="1" step="0.01" id="weight-fitness" value="0.30" />
     <span id="percent-fitness">30%</span>
   </label>
+  
   <div id="layer-controls">
   <label>
     <input type="checkbox" id="toggle-gyms">
@@ -344,6 +345,15 @@
     <input type="range" min="0" max="1" step="0.01" id="weight-ov" value="0.20" />
     <span id="percent-ov">20%</span>
   </label>
+  
+ <div id="layer-controls">
+  <label>
+    <input type="checkbox" id="toggle-busstops">
+    Show busstop locations
+  </label>
+</div>
+  
+  
   <label for="weight-pop">Population density:
     <input type="range" min="0" max="1" step="0.01" id="weight-pop" value="0.50" />
     <span id="percent-pop">50%</span>
@@ -658,7 +668,7 @@ fetch('data/fitness_030.json')  // or './fitness_030.json' depending on folder s
           color: '#fff',
           weight: 1,
           opacity: 1,
-          fillOpacity: 0.8
+          fillOpacity: 0.5
         });
       },
       onEachFeature: (feature, layer) => {
@@ -668,11 +678,34 @@ fetch('data/fitness_030.json')  // or './fitness_030.json' depending on folder s
     });
   });
 
+  let busLayer;
+
+fetch('busstops_030.json')  // 
+  .then(response => response.json())
+  .then(data => {
+    gymLayer = L.geoJSON(data, {
+      pointToLayer: (feature, latlng) => {
+        return L.circleMarker(latlng, {
+          radius: 2,
+          fillColor: '#808080',
+          color: '#000000',
+          weight: 1,
+          opacity: 1,
+          fillOpacity: 0.5
+        });
+      },
+      onEachFeature: (feature, layer) => {
+        const name = feature.properties.name || "Busstop";
+        layer.bindPopup(`<strong>${name}</strong>`);
+      }
+    });
+  });
+
 document.getElementById('toggle-gyms').addEventListener('change', function () {
   if (this.checked) {
-    if (gymLayer) gymLayer.addTo(map);
+    if (busLayer) busLayer.addTo(map);
   } else {
-    if (map.hasLayer(gymLayer)) map.removeLayer(gymLayer);
+    if (map.hasLayer(busLayer)) map.removeLayer(busLayer);
   }
 });
 
