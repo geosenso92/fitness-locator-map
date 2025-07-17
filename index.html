@@ -325,18 +325,41 @@
       border: 1px solid #ddd;
       color: #222;
     }
-    #export-csv-btn, #export-json-btn {
-      margin-top: 4px;
-      margin-bottom: 2px;
-      padding: 5px 12px;
-      font-size: 12px;
-      background: #2C3E83;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      user-select: none;
-    }
+    #export-dropdown {
+  position: fixed;
+  right: 20px;
+  bottom: 110px; /* adjust to be just above your drawing tools */
+  z-index: 1200;
+  user-select: none;
+}
+
+/* Main export button styling */
+#export-btn {
+  background: #2C3E83;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  min-width: 100px;
+}
+
+/* Dropdown menu */
+.export-options {
+  margin-top: 6px;
+  background: white;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Hide dropdown by default */
+.hidden {
+  display: none;
+}
     .control-box > #close-menu-btn {
       margin-top: 8px;
       margin-bottom: 0;
@@ -425,11 +448,13 @@
     Gemeente Utrecht
   </label>
 </div>
-
-  
-  <button id="export-csv-btn" type="button">Export CSV</button>
-  <button id="export-json-btn" type="button">Export JSON</button>
-  <div id="selection-summary"></div>
+<div id="export-dropdown" class="export-dropdown">
+  <button id="export-btn">Export</button>
+  <div id="export-options" class="export-options hidden">
+    <button id="export-csv-btn" type="button">Export CSV</button>
+    <button id="export-json-btn" type="button">Export JSON</button>
+  </div>
+</div>
   <button id="close-menu-btn" type="button">Toggle menu</button>
 </div>
 
