@@ -329,16 +329,17 @@
   margin-right: 8px;           /* ruimte tussen tekst en knop */
 }
 #stats-export-container {
+  position: fixed;
+  top: 100px;
+  right: 20px;
   display: flex;
   align-items: center;
-  gap: 12px;
   background: #f9f9f9;
   border-radius: 6px;
   padding: 8px;
-  margin-top: 8px;
-  font-size: 13px;
-  border: 1px solid #ddd;
-  color: #222;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  z-index: 1100;
+  gap: 12px;
 }
 
 #export-btn {
@@ -357,15 +358,16 @@
 /* Dropdown menu */
 #export-options {
   position: absolute;
-  top: 28px;
+  top: 110%;
   right: 0;
   background: white;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  border: 1px solid #ccc;
   border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
   display: flex;
   flex-direction: column;
-  min-width: 120px;
-  z-index: 1000;
+  width: 140px;
+  z-index: 1200;
 }
 
 #export-options button {
@@ -481,7 +483,7 @@
   <div id="selection-summary"></div>
   <div style="position: relative;">
     <button id="export-btn" title="Export selection">
-      <!-- download SVG icon -->
+      <!-- download icon -->
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
         <path d="M.5 9.9v4.6A1.5 1.5 0 002 16h12a1.5 1.5 0 001.5-1.5v-4.6a.5.5 0 00-1 0v4.6a.5.5 0 01-.5.5H2a.5.5 0 01-.5-.5v-4.6a.5.5 0 00-1 0zM7.646 10.854a.5.5 0 00.708 0l3-3a.5.5 0 00-.708-.708L8.5 9.293V1.5a.5.5 0 00-1 0v7.793L5.354 7.146a.5.5 0 00-.708.708l3 3z"/>
       </svg>
@@ -493,13 +495,13 @@
   </div>
 </div>
 
+<div id="map"></div>
+
 <div>
   <button id="close-menu-btn" type="button">Toggle menu</button>
 </div>
 
 <button id="toggle-menu-btn">Open location finder menu</button>
-
-<div id="map"></div>
 
 <div class="legend" id="legend">
   <div id="legend-info-toggle" title="The suitability index is the result of factors in which weightings are applied. 0 = not suitable | 10 = highly suitable">ℹ️</div>
