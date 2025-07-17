@@ -680,7 +680,7 @@ fetch('data/fitness_030.json')  // or './fitness_030.json' depending on folder s
 
   let busLayer;
 
-fetch('busstops_030.json')  // 
+fetch('data/busstops_030.json')  // 
   .then(response => response.json())
   .then(data => {
     busLayer = L.geoJSON(data, {
