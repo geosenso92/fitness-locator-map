@@ -963,55 +963,59 @@ document.getElementById('toggle-grid').addEventListener('change', function () {
     link.click();
     document.body.removeChild(link);
   }
+  
+let selectedFeatures = [];
 
-  let selectedFeatures = [];
+map.on(L.Draw.Event.CREATED, function (event) {
+  const layer = event.layer;
+  drawnItems.clearLayers();
+  drawnItems.addLayer(layer);
 
-  map.on(L.Draw.Event.CREATED, function (event) {
-    const layer = event.layer;
-    drawnItems.clearLayers();
-    drawnItems.addLayer(layer);
+  const drawnGeoJSON = layer.toGeoJSON();
+  const selected = [];
+  let totalScore = 0;
+  let totalAreaSqMeters = 0;
 
-    const drawnGeoJSON = layer.toGeoJSON();
-    const selected = [];
-    let totalScore = 0;
-    let totalAreaSqMeters = 0;
-    if (layer_group) {
-      layer_group.eachLayer(function (featureLayer) {
-        const feature = featureLayer.toGeoJSON();
-        if (turf.booleanIntersects(drawnGeoJSON, feature)) {
-          selected.push(feature);
-          featureLayer.setStyle({
-            color: 'red',
-            weight: 2,
-            fillOpacity: 0.8,
-          });
-          totalScore += feature.properties.MCA_score || 0;
-          totalAreaSqMeters += turf.area(feature);
-        } else {
-          featureLayer.setStyle(styleFeature(featureLayer.feature));
-        }
-      });
-    }
-    selectedFeatures = selected;
+  if (layer_group) {
+    layer_group.eachLayer(function (featureLayer) {
+      const feature = featureLayer.toGeoJSON();
+      if (turf.booleanIntersects(drawnGeoJSON, feature)) {
+        selected.push(feature);
+        featureLayer.setStyle({
+          color: 'red',
+          weight: 2,
+          fillOpacity: 0.8,
+        });
+        totalScore += feature.properties.MCA_score || 0;
+        totalAreaSqMeters += turf.area(feature);
+      } else {
+        featureLayer.setStyle(styleFeature(featureLayer.feature));
+      }
+    });
+  }
 
-    const count = selected.length;
-    const meanScore = count ? (totalScore / count) : 0;
-    const areaKm2 = totalAreaSqMeters / 1e6;
+  selectedFeatures = selected;
 
-if(count > 0){
-  controlBox.classList.add('show-stats');
-  const container = document.getElementById('stats-export-container');
-  container.style.display = 'flex';
-  document.getElementById('selection-summary').innerHTML = `
-    Total selected cells: ${count}<br>
-    Total area: ${areaKm2.toFixed(1)} km²<br>
-    Average MCA score: ${meanScore.toFixed(2)}
-  `;
-} else {
-  clearSelectionAndStats();
-  document.getElementById('stats-export-container').style.display = 'none';
-}
+  const count = selected.length;
+  const meanScore = count ? (totalScore / count) : 0;
+  const areaKm2 = totalAreaSqMeters / 1e6;
 
+  if(count > 0){
+    controlBox.classList.add('show-stats');
+    const container = document.getElementById('stats-export-container');
+    container.style.display = 'flex';
+    document.getElementById('selection-summary').innerHTML = `
+      Total selected cells: ${count}<br>
+      Total area: ${areaKm2.toFixed(1)} km²<br>
+      Average MCA score: ${meanScore.toFixed(2)}
+    `;
+  } else {
+    clearSelectionAndStats();
+    document.getElementById('stats-export-container').style.display = 'none';
+  }
+}); // <-- sluit map.on(L.Draw.Event.CREATED) hier af
+
+// Nu buiten de map.on, voeg de DOMContentLoaded listener toe:
 document.addEventListener('DOMContentLoaded', () => {
   const exportBtn = document.getElementById('export-btn');
   const exportOptions = document.getElementById('export-options');
@@ -1027,15 +1031,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('export-json-btn').addEventListener('click', () => {
     exportOptions.classList.add('hidden');
-    exportGeoJSON(selectedFeatures);
+    exportSelectedAsJSON(selectedFeatures);  // jouw export functie
   });
 
   document.getElementById('export-csv-btn').addEventListener('click', () => {
     exportOptions.classList.add('hidden');
-    exportCSV(selectedFeatures);
+    exportCSV(selectedFeatures);  // jouw export functie
   });
 });
-
+  
 </script>
 </body>
 </html>
