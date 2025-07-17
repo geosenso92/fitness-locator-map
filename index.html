@@ -102,11 +102,9 @@
   align-items: center;
   gap: 6px;
 }
-
 .control-box label.slider-label > input[type=range] {
   flex-grow: 1;
 }
-
 .control-box label.slider-label > span {
   flex-shrink: 0;
   width: 38px;
@@ -114,7 +112,11 @@
   font-weight: 600;
   user-select: none;
 }
-
+    .control-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .layer-toggle {
   position: relative;
   cursor: pointer;
@@ -123,7 +125,6 @@
   height: 18px;
   margin-left: 8px;
 }
-
 .layer-toggle::after {
   content: attr(title);
   position: absolute;
@@ -141,7 +142,6 @@
   transition: opacity 0.15s ease-in-out;
   z-index: 10;
 }
-
 .layer-toggle:hover::after {
   opacity: 1;
 }
@@ -379,31 +379,23 @@
   <h2 class="control-box-title">Weighting factors (MCA)</h2>
 
 <div class="control-row">
+  <input type="checkbox" id="toggle-gyms" class="layer-toggle" title="Show gym locations" />
   <label for="weight-fitness">Proximity to gym(s):</label>
   <input type="range" min="0" max="1" step="0.01" id="weight-fitness" value="0.30" />
   <span id="percent-fitness">30%</span>
-  <input type="checkbox" id="toggle-gyms" class="layer-toggle" title="Show gym locations" />
-</div>
-  
-  <div id="layer-controls">
-  <label>
-    <input type="checkbox" id="toggle-gym">
-    Show gym locations
-  </label>
-</div>
+</div>  
   
   <label for="weight-ov">Proximity to public transport:
     <input type="range" min="0" max="1" step="0.01" id="weight-ov" value="0.20" />
     <span id="percent-ov">20%</span>
   </label>
-  
- <div id="layer-controls">
-  <label>
-    <input type="checkbox" id="toggle-bus">
-    Show busstop locations
-  </label>
-</div>
-  
+
+<div class="control-row">
+  <input type="checkbox" id="toggle-bus" class="layer-toggle" title="Show bus locations" />
+  <label for="weight-ov">Proximity to gym(s):</label>
+  <input type="range" min="0" max="1" step="0.01" id="weight-ov" value="0.30" />
+  <span id="percent-ov">30%</span>
+</div>  
   
   <label for="weight-pop">Population density:
     <input type="range" min="0" max="1" step="0.01" id="weight-pop" value="0.50" />
