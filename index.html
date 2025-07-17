@@ -336,7 +336,7 @@
   
   <div id="layer-controls">
   <label>
-    <input type="checkbox" id="toggle-gyms">
+    <input type="checkbox" id="toggle-gym">
     Show gym locations
   </label>
 </div>
@@ -348,7 +348,7 @@
   
  <div id="layer-controls">
   <label>
-    <input type="checkbox" id="toggle-busstops">
+    <input type="checkbox" id="toggle-bus">
     Show busstop locations
   </label>
 </div>
@@ -656,7 +656,8 @@
   });
   
 let gymLayer;
-
+let busLayer;
+  
 fetch('data/fitness_030.json')  // or './fitness_030.json' depending on folder structure
   .then(response => response.json())
   .then(data => {
@@ -677,8 +678,6 @@ fetch('data/fitness_030.json')  // or './fitness_030.json' depending on folder s
       }
     });
   });
-
-  let busLayer;
 
 fetch('data/busstops_030.json')  // 
   .then(response => response.json())
@@ -701,7 +700,15 @@ fetch('data/busstops_030.json')  //
     });
   });
 
-document.getElementById('toggle-gyms').addEventListener('change', function () {
+  document.getElementById('toggle-gym').addEventListener('change', function () {
+  if (this.checked) {
+    if (gymLayer) gymLayer.addTo(map);
+  } else {
+    if (map.hasLayer(gymLayer)) map.removeLayer(gymLayer);
+  }
+});
+  
+document.getElementById('toggle-bus').addEventListener('change', function () {
   if (this.checked) {
     if (busLayer) busLayer.addTo(map);
   } else {
