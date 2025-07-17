@@ -567,7 +567,7 @@
       if (document.getElementById('toggle-grid').checked) {
       layer_group.addTo(map);
       updateScores();
-    })
+    });
     .catch(e => {
       alert("Fout bij het laden van GeoJSON: " + e);
     });
