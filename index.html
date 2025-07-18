@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width" />
-  <title>Dashboard Location Finder (demo: fitnesscenter)</title>
+  <title>Dashboard Location Finder (demo: gym)</title>
   <link rel="icon" href="data/1-aafea2ea.ico" type="image/ico" />
 
   <!-- Leaflet and Drawing Tools -->
@@ -18,7 +18,7 @@
       overflow: hidden;
     }
     #header-container {
-      position: absolute; top: 0; left: 0; right: 0; height: 50px;
+      position: absolute; top: 0; left: 0; right: 0; height: 80px;
       background: white; display: flex; align-items: center; padding: 0 15px;
       z-index: 1200; user-select: none;
     }
@@ -29,19 +29,19 @@
       z-index: 0; background: #eee;
     }
     .control-box {
-      position: absolute; top: 90px; left: 10px; width: 320px;
+      position: absolute; align-items: center; top: 90px; left: 10px; width: 320px;
       background: rgba(255,255,255,0.85); padding: 10px 12px 15px 12px;
       border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
       z-index: 1100; font-size: 12px; display: flex; flex-direction: column; gap: 10px;
     }
-    .control-box-title { text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #2C3E83; }
+    .control-box-title { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #2C3E83; }
     .control-row { display: flex; align-items: center; gap: 8px; }
     .layer-toggle { cursor: pointer; width: 12px; height: 12px; margin-left: 8px; }
     .inline-checkbox { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
     .inline-checkbox input[type="checkbox"] { margin: 0; }
     .slider-label { display: flex; align-items: center; gap: 6px; }
     #reset-btn, #update-btn {
-      margin-top: 3px; width: 100%; padding: 7px; font-size: 12px;
+      margin-top: 6px; width: 100%; padding: 7px; font-size: 12px;
       background: #2C3E83; color: white; border: none; border-radius: 4px; cursor: pointer;
     }
     #info-icon {
@@ -64,7 +64,7 @@
     }
     #close-menu-btn { margin-top: 8px; }
     .legend {
-      position: absolute; bottom: 10px; left: 10px; padding: 8px 12px; background: rgba(255, 255, 255, 0.75);
+      position: absolute; bottom: 10px; left: 10px; padding: 8px 12px; background: rgba(255,255,255,0.75);
       font-size: 12px; border-radius: 6px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
       z-index: 1100; width: 180px; user-select: none;
     }
@@ -78,7 +78,7 @@
       border-radius: 50%; font-weight: bold; font-size: 14px; text-align: center; line-height: 20px; cursor: pointer; z-index: 1200;
     }
     #legend-toggle {
-      position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; background: #eee; color: #333;
+      position: absolute; top: 6px; right: 6px; width: 20px; height: 14px; background: #eee; color: #333;
       border-radius: 3px; font-weight: bold; font-size: 16px; text-align: center; line-height: 20px; cursor: pointer; z-index: 1200;
     }
     /* Leaflet Draw icons fix */
@@ -89,23 +89,6 @@
     }
     .leaflet-div-icon.leaflet-editing-icon { background: #fff; border: 1px solid #333; box-shadow: none; }
     .leaflet-div-icon.leaflet-draw-edit-move { background: #fff; border: 1px solid #555; box-shadow: none; }
-
-/* Style for custom single-select button */
-.leaflet-draw-toolbar  {
-  width: 8px;
-  height: 8px;
-  line-height: 34px;
-  font-size: 8px;
-  text-align: center;
-  cursor: pointer;
-  display: block;
-  user-select: none;
-}
-/* Active state styling */
-.leaflet-draw-toolbar  {
-  background-color: #ddd;
-}
-    
     /* Hide export/selection UI unless needed */
     #stats-export-container, #export-csv-btn, #export-json-btn, #selection-summary { display: none; }
     .control-box.show-stats #stats-export-container,
@@ -132,7 +115,7 @@
       <input type="checkbox" id="toggle-bus" class="layer-toggle" title="Show bus locations" />
       <label for="weight-ov">Proximity to public transport</label>
       <input type="range" min="0" max="1" step="0.01" id="weight-ov" value="0.20" />
-      <span id="percent-ov">30%</span>
+      <span id="percent-ov">20%</span>
     </div>
     <div class="control-row">
       <input type="checkbox" id="toggle-pop" class="layer-toggle" title="Show population density" />
@@ -160,7 +143,7 @@
         
 </div>
     </div>
-    <label id="transparency-label" for="transparency-slider">Transparency of gridlayer:
+    <label id="transparency-label" for="transparency-slider">Raster transparency of grid:
       <input type="range" min="0" max="1" step="0.01" id="transparency-slider" value="0.5" />
       <span id="percent-transparency">50%</span>
     </label>
@@ -481,14 +464,6 @@ document.getElementById('toggle-buildings').addEventListener('change', function(
       }
     });
 
-        // Clear selection summary or update UI accordingly
-        document.getElementById('selection-summary').innerHTML = '';
-      });
-
-    return container;
-  }
-});
-    
     function clearSelectionAndStats() {
       drawnItems.clearLayers();
       selectedFeatures = [];
