@@ -1,868 +1,544 @@
 <!doctype html>
 <html lang="nl">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width" />
-    <title>Dashboard Location Finder (demo: fitnesscenter)</title>
-    <link rel="icon" href="data/1-aafea2ea.ico" type="image/ico" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width" />
+  <title>Dashboard Location Finder (demo: fitnesscenter)</title>
+  <link rel="icon" href="data/1-aafea2ea.ico" type="image/ico" />
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+  <!-- Leaflet and Drawing Tools -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
 
-    <style>
-        html, body {
-            width: 100%; height: 100%; margin: 0; padding: 0;
-            font-family: sans-serif;
-            background: #eee;
-            overflow: hidden;
-        }
-        #header-container {
-            position: absolute; top: 0; left: 0; right: 0; height: 50px;
-            background: white; display: flex; align-items: center; padding: 0 15px;
-            z-index: 1200; user-select: none;
-        }
-        #logo { height: 40px; margin-right: 15px; }
-        #page-title { font-size: 18px; font-weight: 700; color: #2C3E83; }
-        #map {
-            position: absolute; top: 50px; left: 0; right: 0; bottom: 0;
-            z-index: 0; background: #eee;
-        }
-        .control-box {
-            position: absolute; top: 90px; left: 10px; width: 320px;
-            background: rgba(255,255,255,0.85); padding: 10px 12px 15px 12px;
-            border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
-            z-index: 1100; font-size: 12px; display: flex; flex-direction: column; gap: 10px;
-        }
-        .control-box-title { text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #2C3E83; }
-        .control-row { display: flex; align-items: center; gap: 8px; }
-        .layer-toggle { cursor: pointer; width: 12px; height: 12px; margin-left: 8px; }
-        .inline-checkbox { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
-        .inline-checkbox input[type="checkbox"] { margin: 0; }
-        .slider-label { display: flex; align-items: center; gap: 6px; }
-        #reset-btn, #update-btn {
-            margin-top: 3px; width: 100%; padding: 7px; font-size: 12px;
-            background: #2C3E83; color: white; border: none; border-radius: 4px; cursor: pointer;
-        }
-        #info-icon {
-            position: absolute; top: 50%; right: 5px; transform: translateY(-50%);
-            width: 18px; height: 18px; border-radius: 50%; background: white; color: black;
-            font-weight: bold; text-align: center; line-height: 18px; font-size: 12px; cursor: pointer;
-        }
-        #info-text {
-            position: absolute; bottom: 100%; right: 0; margin-bottom: 8px; width: 230px;
-            background: white; border: 1px solid #ccc; padding: 7px 8px; font-size: 12px;
-            border-radius: 4px; box-shadow: 0 0 5px rgba(0,0,0,0.2);
-            display: none; z-index: 1150; user-select: none; color: #222; line-height: 1.3;
-        }
-        #transparency-label { margin-top: 10px; user-select: none; }
-        #percent-fitness, #percent-ov, #percent-pop, #percent-transparency { margin-left: 4px; font-weight: 600; }
-        #toggle-menu-btn {
-            position: absolute; top: 90px; left: 10px; background: rgba(255,255,255,0.95);
-            padding: 10px 15px; border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
-            z-index: 1150; font-size: 13px; cursor: pointer; user-select: none; display: none; width: 160px; text-align: center;
-        }
-        #close-menu-btn { margin-top: 8px; }
-        .legend {
-            position: absolute; bottom: 10px; left: 10px; padding: 8px 12px; background: rgba(255, 255, 255, 0.75);
-            font-size: 12px; border-radius: 6px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
-            z-index: 1100; width: 180px; user-select: none;
-        }
-        .legend-title { font-weight: bold; margin-bottom: 7px; text-align: center; }
-        .legend-scale { display: flex; height: 16px; border-radius: 4px; overflow: hidden; margin-bottom: 4px; }
-        .color-box { flex: 1; height: 16px; }
-        .legend-labels { display: flex; justify-content: space-between; }
-        .legend-info { font-size: 11px; color: #444; margin-top: 4px; line-height: 1.3; display: none; }
-        #legend-info-toggle {
-            position: absolute; top: 8px; left: 8px; width: 20px; height: 20px; background: none; color: #333;
-            border-radius: 50%; font-weight: bold; font-size: 14px; text-align: center; line-height: 20px; cursor: pointer; z-index: 1200;
-        }
-        #legend-toggle {
-            position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; background: #eee; color: #333;
-            border-radius: 3px; font-weight: bold; font-size: 16px; text-align: center; line-height: 20px; cursor: pointer; z-index: 1200;
-        }
-        /* Leaflet Draw icons fix */
-        .leaflet-div-icon.leaflet-editing-icon,
-        .leaflet-div-icon.leaflet-draw-edit-edit,
-        .leaflet-div-icon.leaflet-draw-edit-move {
-            width: 8px !important; height: 8px !important; margin-left: -4px !important; margin-top: -4px !important; border-radius: 2px !important;
-        }
-        .leaflet-div-icon.leaflet-editing-icon { background: #fff; border: 1px solid #333; box-shadow: none; }
-        .leaflet-div-icon.leaflet-draw-edit-move { background: #fff; border: 1px solid #555; box-shadow: none; }
+  <style>
+    html, body {
+      width: 100%; height: 100%; margin: 0; padding: 0;
+      font-family: sans-serif;
+      background: #eee;
+      overflow: hidden;
+    }
+    #header-container {
+      position: absolute; top: 0; left: 0; right: 0; height: 50px;
+      background: white; display: flex; align-items: center; padding: 0 15px;
+      z-index: 1200; user-select: none;
+    }
+    #logo { height: 40px; margin-right: 15px; }
+    #page-title { font-size: 18px; font-weight: 700; color: #2C3E83; }
+    #map {
+      position: absolute; top: 50px; left: 0; right: 0; bottom: 0;
+      z-index: 0; background: #eee;
+    }
+    .control-box {
+      position: absolute; top: 90px; left: 10px; width: 320px;
+      background: rgba(255,255,255,0.85); padding: 10px 12px 15px 12px;
+      border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      z-index: 1100; font-size: 12px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .control-box-title { text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #2C3E83; }
+    .control-row { display: flex; align-items: center; gap: 8px; }
+    .layer-toggle { cursor: pointer; width: 12px; height: 12px; margin-left: 8px; }
+    .inline-checkbox { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .inline-checkbox input[type="checkbox"] { margin: 0; }
+    .slider-label { display: flex; align-items: center; gap: 6px; }
+    #reset-btn, #update-btn {
+      margin-top: 3px; width: 100%; padding: 7px; font-size: 12px;
+      background: #2C3E83; color: white; border: none; border-radius: 4px; cursor: pointer;
+    }
+    #info-icon {
+      position: absolute; top: 50%; right: 5px; transform: translateY(-50%);
+      width: 18px; height: 18px; border-radius: 50%; background: white; color: black;
+      font-weight: bold; text-align: center; line-height: 18px; font-size: 12px; cursor: pointer;
+    }
+    #info-text {
+      position: absolute; bottom: 100%; right: 0; margin-bottom: 8px; width: 230px;
+      background: white; border: 1px solid #ccc; padding: 7px 8px; font-size: 12px;
+      border-radius: 4px; box-shadow: 0 0 5px rgba(0,0,0,0.2);
+      display: none; z-index: 1150; user-select: none; color: #222; line-height: 1.3;
+    }
+    #transparency-label { margin-top: 10px; user-select: none; }
+    #percent-fitness, #percent-ov, #percent-pop, #percent-transparency { margin-left: 4px; font-weight: 600; }
+    #toggle-menu-btn {
+      position: absolute; top: 90px; left: 10px; background: rgba(255,255,255,0.95);
+      padding: 10px 15px; border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      z-index: 1150; font-size: 13px; cursor: pointer; user-select: none; display: none; width: 160px; text-align: center;
+    }
+    #close-menu-btn { margin-top: 8px; }
+    .legend {
+      position: absolute; bottom: 10px; left: 10px; padding: 8px 12px; background: rgba(255, 255, 255, 0.75);
+      font-size: 12px; border-radius: 6px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      z-index: 1100; width: 180px; user-select: none;
+    }
+    .legend-title { font-weight: bold; margin-bottom: 7px; text-align: center; }
+    .legend-scale { display: flex; height: 16px; border-radius: 4px; overflow: hidden; margin-bottom: 4px; }
+    .color-box { flex: 1; height: 16px; }
+    .legend-labels { display: flex; justify-content: space-between; }
+    .legend-info { font-size: 11px; color: #444; margin-top: 4px; line-height: 1.3; display: none; }
+    #legend-info-toggle {
+      position: absolute; top: 8px; left: 8px; width: 20px; height: 20px; background: none; color: #333;
+      border-radius: 50%; font-weight: bold; font-size: 14px; text-align: center; line-height: 20px; cursor: pointer; z-index: 1200;
+    }
+    #legend-toggle {
+      position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; background: #eee; color: #333;
+      border-radius: 3px; font-weight: bold; font-size: 16px; text-align: center; line-height: 20px; cursor: pointer; z-index: 1200;
+    }
+    /* Leaflet Draw icons fix */
+    .leaflet-div-icon.leaflet-editing-icon,
+    .leaflet-div-icon.leaflet-draw-edit-edit,
+    .leaflet-div-icon.leaflet-draw-edit-move {
+      width: 8px !important; height: 8px !important; margin-left: -4px !important; margin-top: -4px !important; border-radius: 2px !important;
+    }
+    .leaflet-div-icon.leaflet-editing-icon { background: #fff; border: 1px solid #333; box-shadow: none; }
+    .leaflet-div-icon.leaflet-draw-edit-move { background: #fff; border: 1px solid #555; box-shadow: none; }
 
-        /* --- Custom CSS for Draw Toolbar Positioning and Single Selection Button --- */
-        /*
-         * This targets the specific Leaflet.draw toolbar that contains the
-         * drawing tools and repositions it to the bottom right, vertically.
-         */
-        .leaflet-draw-toolbar.leaflet-bar.leaflet-draw-toolbar-top { /* Using top here because the default drawControl often gets 'top' */
-            display: flex;
-            flex-direction: column; /* Stack buttons vertically */
-            position: absolute;
-            bottom: 20px;       /* Distance from the bottom of the map */
-            right: 20px;        /* Distance from the right of the map */
-            top: auto !important; /* Override default 'top' positioning from Leaflet.draw */
-            left: auto !important; /* Ensure it doesn't get stuck on the left */
-        }
-
-        /* Add some margin between buttons for better spacing */
-        .leaflet-draw-toolbar.leaflet-bar.leaflet-draw-toolbar-top a {
-            margin-bottom: 5px;
-        }
-
-        /* Style for custom single-select button */
-        .leaflet-draw-toolbar .leaflet-draw-draw-singlecell {
-            /* Standard button styling from Leaflet.draw */
-            width: 34px;
-            height: 34px;
-            line-height: 34px;
-            display: inline-block;
-            text-align: center;
-            background: #fff;
-            border-radius: 4px;
-            margin-left: 2px; /* Maintain small gap if it's not the first button */
-            cursor: pointer;
-            border: 1px solid #bbb;
-            /* Ensure its background is set if other 'a' tags have background-image: none !important; */
-            background-image: none !important;
-        }
-        .leaflet-draw-toolbar .leaflet-draw-draw-singlecell.active {
-            background: #ddd;
-            border-color: #2C3E83;
-        }
-        /* Icon within the single-select button (using SVG for flexibility) */
-        .leaflet-draw-toolbar .leaflet-draw-draw-singlecell svg {
-            vertical-align: middle; /* Center the SVG icon */
-            stroke: #333; /* Default icon color */
-        }
-        .leaflet-draw-toolbar .leaflet-draw-draw-singlecell.active svg {
-            stroke: #2C3E83; /* Icon color when active */
-        }
-
-        /* Ensure Leaflet.draw's default icons are correctly displayed */
-        /* This rule re-applies the spritesheet backgrounds for the standard buttons */
-        .leaflet-draw-toolbar a.leaflet-draw-draw-polygon,
-        .leaflet-draw-toolbar a.leaflet-draw-draw-rectangle {
-            background-image: url('https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/images/spritesheet.png') !important;
-            background-repeat: no-repeat;
-            background-position: center center; /* Reset to center for safety if overwritten */
-        }
-        .leaflet-draw-toolbar a.leaflet-draw-draw-polygon {
-            background-position: -31px -2px !important; /* Specific position for polygon icon */
-        }
-        .leaflet-draw-toolbar a.leaflet-draw-draw-rectangle {
-            background-position: -62px -2px !important; /* Specific position for rectangle icon */
-        }
-        .leaflet-draw-toolbar a.leaflet-draw-edit-remove {
-            background-position: -182px -2px !important; /* Specific position for delete icon */
-        }
-
-        /* Hide export/selection UI unless needed */
-        #stats-export-container, #export-csv-btn, #export-json-btn, #selection-summary { display: none; }
-        .control-box.show-stats #stats-export-container,
-        .control-box.show-stats #export-csv-btn,
-        .control-box.show-stats #export-json-btn,
-        .control-box.show-stats #selection-summary { display: block; }
-    </style>
+/* Style for custom single-select button */
+.leaflet-draw-toolbar  {
+  width: 8px;
+  height: 8px;
+  line-height: 34px;
+  font-size: 8px;
+  text-align: center;
+  cursor: pointer;
+  display: block;
+  user-select: none;
+}
+/* Active state styling */
+.leaflet-draw-toolbar  {
+  background-color: #ddd;
+}
+    
+    /* Hide export/selection UI unless needed */
+    #stats-export-container, #export-csv-btn, #export-json-btn, #selection-summary { display: none; }
+    .control-box.show-stats #stats-export-container,
+    .control-box.show-stats #export-csv-btn,
+    .control-box.show-stats #export-json-btn,
+    .control-box.show-stats #selection-summary { display: block; }
+  </style>
 </head>
 <body>
-    <div id="header-container">
-        <img id="logo" src="data/NewLogo21.png" alt="Logo" />
-        <div id="page-title">Dashboard Location Finder (demo: gym)</div>
+  <div id="header-container">
+    <img id="logo" src="data/NewLogo21.png" alt="Logo" />
+    <div id="page-title">Dashboard Location Finder (demo: gym)</div>
+  </div>
+  <div id="map"></div>
+  <div class="control-box" id="control-box">
+    <h2 class="control-box-title">Weighting factors (MCA)</h2>
+    <div class="control-row">
+      <input type="checkbox" id="toggle-gym" class="layer-toggle" title="Show gym locations" />
+      <label for="weight-fitness">Proximity to gym(s)</label>
+      <input type="range" min="0" max="1" step="0.01" id="weight-fitness" value="0.30" />
+      <span id="percent-fitness">30%</span>
     </div>
-    <div id="map"></div>
-    <div class="control-box" id="control-box">
-        <h2 class="control-box-title">Weighting factors (MCA)</h2>
-        <div class="control-row">
-            <input type="checkbox" id="toggle-gym" class="layer-toggle" title="Show gym locations" />
-            <label for="weight-fitness">Proximity to gym(s)</label>
-            <input type="range" min="0" max="1" step="0.01" id="weight-fitness" value="0.30" />
-            <span id="percent-fitness">30%</span>
-        </div>
-        <div class="control-row">
-            <input type="checkbox" id="toggle-bus" class="layer-toggle" title="Show bus locations" />
-            <label for="weight-ov">Proximity to public transport</label>
-            <input type="range" min="0" max="1" step="0.01" id="weight-ov" value="0.20" />
-            <span id="percent-ov">30%</span>
-        </div>
-        <div class="control-row">
-            <input type="checkbox" id="toggle-pop" class="layer-toggle" title="Show population density" />
-            <label for="weight-pop">Population density</label>
-            <input type="range" min="0" max="1" step="0.01" id="weight-pop" value="0.50" />
-            <span id="percent-pop">50%</span>
-        </div>
-        <button id="update-btn" type="button" style="position:relative;">
-            Update suitability index
-            <div id="info-icon" style="display:inline-block;">i</div>
-            <div id="info-text">The suitability index is the result of factors in which weighting are applied.</div>
+    <div class="control-row">
+      <input type="checkbox" id="toggle-bus" class="layer-toggle" title="Show bus locations" />
+      <label for="weight-ov">Proximity to public transport</label>
+      <input type="range" min="0" max="1" step="0.01" id="weight-ov" value="0.20" />
+      <span id="percent-ov">30%</span>
+    </div>
+    <div class="control-row">
+      <input type="checkbox" id="toggle-pop" class="layer-toggle" title="Show population density" />
+      <label for="weight-pop">Population density</label>
+      <input type="range" min="0" max="1" step="0.01" id="weight-pop" value="0.50" />
+      <span id="percent-pop">50%</span>
+    </div>
+    <button id="update-btn" type="button" style="position:relative;">
+      Update suitability index
+      <div id="info-icon" style="display:inline-block;">i</div>
+      <div id="info-text">The suitability index is the result of factors in which weighting are applied.</div>
+    </button>
+    <button id="reset-btn" type="button">Reset</button>
+    <div class="control-row">
+      <label class="inline-checkbox">
+        <input type="checkbox" id="toggle-grid" class="layer-toggle" title="Show grid layer" checked />
+        Suitability layer
+      </label>
+      
+      <div class="control-row">
+  <label class="inline-checkbox">
+    <input type="checkbox" id="toggle-buildings" class="layer-toggle" title="Show buildings layer" />
+  Buildings layer
+  </label>
+        
+</div>
+    </div>
+    <label id="transparency-label" for="transparency-slider">Transparency of gridlayer:
+      <input type="range" min="0" max="1" step="0.01" id="transparency-slider" value="0.5" />
+      <span id="percent-transparency">50%</span>
+    </label>
+    <div id="stats-export-container">
+      <div id="selection-summary"></div>
+      <div style="position: relative;">
+        <button id="export-btn" title="Export selection">
+          <!-- download icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M.5 9.9v4.6A1.5 1.5 0 002 16h12a1.5 1.5 0 001.5-1.5v-4.6a.5.5 0 00-1 0v4.6a.5.5 0 01-.5.5H2a.5.5 0 01-.5-.5v-4.6a.5.5 0 00-1 0zM7.646 10.854a.5.5 0 00.708 0l3-3a.5.5 0 00-.708-.708L8.5 9.293V1.5a.5.5 0 00-1 0v7.793L5.354 7.146a.5.5 0 10-.708.708l3 3z"/>
+          </svg>
         </button>
-        <button id="reset-btn" type="button">Reset</button>
-        <div class="control-row">
-            <label class="inline-checkbox">
-                <input type="checkbox" id="toggle-grid" class="layer-toggle" title="Show grid layer" checked />
-                Suitability layer
-            </label>
-            
-            <div class="control-row">
-                <label class="inline-checkbox">
-                    <input type="checkbox" id="toggle-buildings" class="layer-toggle" title="Show buildings layer" />
-                    Buildings layer
-                </label>
-                
-            </div>
+        <div id="export-options" class="hidden">
+          <button id="export-json-btn">Export GeoJSON</button>
+          <button id="export-csv-btn">Export CSV</button>
         </div>
-        <label id="transparency-label" for="transparency-slider">Transparency of gridlayer:
-            <input type="range" min="0" max="1" step="0.01" id="transparency-slider" value="0.5" />
-            <span id="percent-transparency">50%</span>
-        </label>
-        <div id="stats-export-container">
-            <div id="selection-summary"></div>
-            <div style="position: relative;">
-                <button id="export-btn" title="Export selection">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M.5 9.9v4.6A1.5 1.5 0 002 16h12a1.5 1.5 0 001.5-1.5v-4.6a.5.5 0 00-1 0v4.6a.5.5 0 01-.5.5H2a.5.5 0 01-.5-.5v-4.6a.5.5 0 00-1 0zM7.646 10.854a.5.5 0 00.708 0l3-3a.5.5 0 00-.708-.708L8.5 9.293V1.5a.5.5 0 00-1 0v7.793L5.354 7.146a.5.5 0 10-.708.708l3 3z"/>
-                    </svg>
-                </button>
-                <div id="export-options" class="hidden">
-                    <button id="export-json-btn">Export GeoJSON</button>
-                    <button id="export-csv-btn">Export CSV</button>
-                </div>
-            </div>
-        </div>
-        <button id="close-menu-btn" type="button">Toggle menu</button>
+      </div>
     </div>
-    <button id="toggle-menu-btn">Open location finder menu</button>
-    <div class="legend" id="legend">
-        <div id="legend-info-toggle" title="The suitability index is the result of factors in which weightings are applied. 0 = not suitable | 10 = highly suitable">ℹ️</div>
-        <div id="legend-toggle" title="Toggle legend">−</div>
-        <div class="legend-title">Legend</div>
-        <div class="legend-header" style="display: flex; justify-content: space-between; align-items: center;">
-            <span class="legend-title">Suitability index</span>
-        </div>
-        <div class="legend-scale">
-            <div class="color-box" style="background:#d73027"></div>
-            <div class="color-box" style="background:#f46d43"></div>
-            <div class="color-box" style="background:#fdae61"></div>
-            <div class="color-box" style="background:#fee08b"></div>
-            <div class="color-box" style="background:#d9ef8b"></div>
-            <div class="color-box" style="background:#a6d96a"></div>
-            <div class="color-box" style="background:#1a9641"></div>
-        </div>
-        <div class="legend-labels">
-            <span>0</span><span>10</span>
-        </div>
-        <div class="legend-info" id="legend-info">
-            The suitability index is the result of factors in which weightings are applied. 0 = not suitable | 10 = highly suitable
-        </div>
+    <button id="close-menu-btn" type="button">Toggle menu</button>
+  </div>
+  <button id="toggle-menu-btn">Open location finder menu</button>
+  <div class="legend" id="legend">
+    <div id="legend-info-toggle" title="The suitability index is the result of factors in which weightings are applied. 0 = not suitable | 10 = highly suitable">ℹ️</div>
+    <div id="legend-toggle" title="Toggle legend">−</div>
+    <div class="legend-title">Legend</div>
+    <div class="legend-header" style="display: flex; justify-content: space-between; align-items: center;">
+      <span class="legend-title">Suitability index</span>
     </div>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-    <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
-    <script>
-        // MAP INITIALISATIE
-        function getCenterCoords() {
-            return window.innerWidth <= 768 ? [52.10, 5.10] : [52.09, 5.42];
-        }
-        const map = L.map('map', {
-            zoomControl: false,
-            minZoom: 11,
-            maxZoom: 18,
-            maxBounds: [[51.90, 4.75], [52.28, 5.35]],
-            maxBoundsViscosity: 1.0,
-            zoomSnap: 0.5,
-            zoomDelta: 0.5
-        }).setView(getCenterCoords(), 12);
-        map.setZoom(map.getZoom() - 0.5);
-        L.control.zoom({ position: 'topright' }).addTo(map);
-        L.control.scale({ position: 'bottomright' }).addTo(map);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+    <div class="legend-scale">
+      <div class="color-box" style="background:#d73027"></div>
+      <div class="color-box" style="background:#f46d43"></div>
+      <div class="color-box" style="background:#fdae61"></div>
+      <div class="color-box" style="background:#fee08b"></div>
+      <div class="color-box" style="background:#d9ef8b"></div>
+      <div class="color-box" style="background:#a6d96a"></div>
+      <div class="color-box" style="background:#1a9641"></div>
+    </div>
+    <div class="legend-labels">
+      <span>0</span><span>10</span>
+    </div>
+    <div class="legend-info" id="legend-info">
+      The suitability index is the result of factors in which weightings are applied. 0 = not suitable | 10 = highly suitable
+    </div>
+  </div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+  <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+  <script>
+    // MAP INITIALISATIE
+    function getCenterCoords() {
+      return window.innerWidth <= 768 ? [52.10, 5.10] : [52.09, 5.42];
+    }
+    const map = L.map('map', {
+      zoomControl: false,
+      minZoom: 11,
+      maxZoom: 18,
+      maxBounds: [[51.90, 4.75], [52.28, 5.35]],
+      maxBoundsViscosity: 1.0,
+      zoomSnap: 0.5,
+      zoomDelta: 0.5
+    }).setView(getCenterCoords(), 12);
+    map.setZoom(map.getZoom() - 0.5);
+    L.control.zoom({ position: 'topright' }).addTo(map);
+    L.control.scale({ position: 'bottomright' }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
 
-        // KAART-LAGEN EN ICONS
-        let gymLayer, busLayer, layer_group;
-        const gymIcon = L.icon({
-            iconUrl: 'https://geosenso92.github.io/fitness-locator-map/data/gymsymbol.png',
-            iconSize: [24, 24], iconAnchor: [16, 32], popupAnchor: [0, -32]
+    // KAART-LAGEN EN ICONS
+    let gymLayer, busLayer, layer_group;
+    const gymIcon = L.icon({
+      iconUrl: 'https://geosenso92.github.io/fitness-locator-map/data/gymsymbol.png',
+      iconSize: [24, 24], iconAnchor: [16, 32], popupAnchor: [0, -32]
+    });
+
+    // GYM LAYER
+    fetch('data/fitness_030.json').then(r=>r.json()).then(data=>{
+      gymLayer = L.geoJSON(data, {
+        pointToLayer: (f,latlng)=>L.marker(latlng, {icon:gymIcon}),
+        onEachFeature: (f,layer)=>layer.bindPopup(`<strong>${f.properties.name||"Gym"}</strong>`)
+      });
+    });
+    // BUS LAYER
+    fetch('data/busstops_030.json').then(r=>r.json()).then(data=>{
+      busLayer = L.geoJSON(data, {
+        pointToLayer: (f,latlng)=>L.circleMarker(latlng, {radius:2, fillColor:'#808080', color:'#000', weight:1, opacity:1, fillOpacity:0.5}),
+        onEachFeature: (f,layer)=>layer.bindPopup(`<strong>${f.properties.name||"Busstop"}</strong>`)
+      });
+    });
+
+    let gebouwenLayer = null;
+
+// Functie om de gebouwenlaag te laden
+function loadGebouwenLayer() {
+  if (!gebouwenLayer) {
+    gebouwenLayer = L.geoJSON(null, {
+      // hier kun je opties toevoegen, zoals style en onEachFeature
+      style: {
+        color: '#3388ff',
+        weight: 2,
+        opacity: 0.6,
+        fillOpacity: 0.3,
+      }
+    });
+
+    // laad de GeoJSON data
+    fetch('data/Gebouwen.geojson')
+      .then(response => response.json())
+      .then(data => {
+        gebouwenLayer.addData(data);
+      })
+      .catch(err => console.error('Fout bij laden gebouwenlaag:', err));
+  }
+}
+
+// Eventlistener voor de checkbox
+document.getElementById('toggle-buildings').addEventListener('change', function(e) {
+  if (e.target.checked) {
+    // laad de laag als die nog niet geladen is
+    loadGebouwenLayer();
+    // voeg toe aan de kaart
+    gebouwenLayer.addTo(map);
+  } else {
+    // verwijder laag van de kaart
+    if (gebouwenLayer) {
+      map.removeLayer(gebouwenLayer);
+    }
+  }
+});
+
+    // GRID LAYER (SUITABILITY)
+    let currentTransparency = 0.5;
+    function getColor(score) {
+      return score > 6 ? '#1a9641' :
+             score > 4 ? '#a6d96a' :
+             score > 2 ? '#fdae61' : '#d7191c';
+    }
+    function styleFeature(feature) {
+      return {
+        fillColor: getColor(feature.properties.MCA_score || 0),
+        weight: 0.3,
+        color: '#555',
+        fillOpacity: currentTransparency
+      };
+    }
+    function popFeature(feature, layer) {
+      layer.on({ mouseover: highlightFeature, mouseout: resetHighlight });
+      layer.bindPopup('Suitability index: ' + ((feature.properties.MCA_score || 0).toFixed(2)));
+    }
+    function highlightFeature(e) { e.target.setStyle({ weight: 2, color: '#666' }); }
+    function resetHighlight(e) { layer_group.resetStyle(e.target); }
+    fetch('data/gridlayer_mca_fitness.geojson').then(res=>res.json()).then(data=>{
+      layer_group = L.geoJSON(data, { style: styleFeature, onEachFeature: popFeature });
+      if(document.getElementById('toggle-grid').checked) {
+        layer_group.addTo(map); updateScores();
+      }
+    });
+
+    // OVERLAY/BASELAYER CONTROL
+    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'Tiles © Esri'});
+    L.control.layers(null, { "Satellite": satelliteLayer }, { position:'topright' }).addTo(map);
+
+    // GEMEENTEKAART
+    fetch('https://raw.githubusercontent.com/geosenso92/fitness-locator-map/main/data/gemkaart24.json').then(r=>r.json()).then(data=>{
+      L.geoJSON(data, {
+        filter: f=>f.properties.gemeentenaam!=="Utrecht",
+        style: { color: "#555", weight: 1, fillColor: "#f7f7f7", fillOpacity: 0.3 },
+        onEachFeature: (f,layer)=>{
+          layer.bindTooltip(f.properties.gemeentenaam, {sticky:true});
+          layer.on({
+            mouseover: e=>{ e.target.setStyle({weight:2, color:'#000', fillOpacity:0.5}); e.target.openTooltip(); },
+            mouseout: e=>{ layer.setStyle({ color: "#555", weight: 1, fillColor: "#f7f7f7", fillOpacity: 0.3 }); e.target.closeTooltip(); }
+          });
+        }
+      }).addTo(map);
+    });
+
+    // SLIDERS EN BUTTONS
+    function updatePercentDisplay(idRange, idPercent) {
+      const range = document.getElementById(idRange);
+      const percent = document.getElementById(idPercent);
+      range.addEventListener('input', () => { percent.textContent = Math.round(parseFloat(range.value) * 100) + '%'; });
+    }
+    updatePercentDisplay('weight-fitness','percent-fitness');
+    updatePercentDisplay('weight-ov','percent-ov');
+    updatePercentDisplay('weight-pop','percent-pop');
+    updatePercentDisplay('transparency-slider','percent-transparency');
+
+    function updateScores() {
+      let w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
+      let w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
+      let w_pop = parseFloat(document.getElementById('weight-pop').value) || 0;
+      const sum = w_ov + w_fit + w_pop;
+      if(sum>0) { w_ov/=sum; w_fit/=sum; w_pop/=sum; } else { w_ov=0.2; w_fit=0.3; w_pop=0.5; }
+      document.getElementById('weight-ov').value = w_ov.toFixed(3);
+      document.getElementById('percent-ov').textContent = Math.round(w_ov*100)+'%';
+      document.getElementById('weight-fitness').value = w_fit.toFixed(3);
+      document.getElementById('percent-fitness').textContent = Math.round(w_fit*100)+'%';
+      document.getElementById('weight-pop').value = w_pop.toFixed(3);
+      document.getElementById('percent-pop').textContent = Math.round(w_pop*100)+'%';
+      if (layer_group) {
+        layer_group.eachLayer(layer => {
+          const p = layer.feature.properties;
+          const ov = parseFloat(p.score_bus) || 0;
+          const fit = parseFloat(p.score_fit) || 0;
+          const pop = parseFloat(p.score_pop) || 0;
+          p.MCA_score = w_ov * ov + w_fit * fit + w_pop * pop;
+          layer.setStyle(styleFeature(layer.feature));
+          layer.bindPopup('Suitability index: ' + p.MCA_score.toFixed(2));
         });
+      }
+    }
+    document.getElementById('update-btn').onclick = updateScores;
+    document.getElementById('transparency-slider').oninput = e => {
+      currentTransparency = parseFloat(e.target.value);
+      document.getElementById('percent-transparency').textContent = Math.round(currentTransparency*100)+'%';
+      if(layer_group) layer_group.setStyle(layer=>({...styleFeature(layer.feature)}));
+    };
+    document.getElementById('reset-btn').onclick = function() {
+      document.getElementById('weight-fitness').value = 0.3;
+      document.getElementById('weight-ov').value = 0.2;
+      document.getElementById('weight-pop').value = 0.5;
+      document.getElementById('transparency-slider').value = 0.5;
+      document.getElementById('percent-fitness').textContent = '30%';
+      document.getElementById('percent-ov').textContent = '20%';
+      document.getElementById('percent-pop').textContent = '50%';
+      document.getElementById('percent-transparency').textContent = '50%';
+      currentTransparency = 0.5;
+      if(layer_group) layer_group.setStyle(layer=>({...styleFeature(layer.feature)}));
+      updateScores();
+      clearSelectionAndStats();
+    };
 
-        // GYM LAYER
-        fetch('data/fitness_030.json').then(r=>r.json()).then(data=>{
-            gymLayer = L.geoJSON(data, {
-                pointToLayer: (f,latlng)=>L.marker(latlng, {icon:gymIcon}),
-                onEachFeature: (f,layer)=>layer.bindPopup(`<strong>${f.properties.name||"Gym"}</strong>`)
-            });
+    // TOGGLE LAGEN
+    document.getElementById('toggle-gym').onchange = function() {
+      if(this.checked) { if(gymLayer) gymLayer.addTo(map); }
+      else if(gymLayer && map.hasLayer(gymLayer)) map.removeLayer(gymLayer);
+    }
+    document.getElementById('toggle-bus').onchange = function() {
+      if(this.checked) { if(busLayer) busLayer.addTo(map); }
+      else if(busLayer && map.hasLayer(busLayer)) map.removeLayer(busLayer);
+    }
+    document.getElementById('toggle-grid').onchange = function() {
+      if(this.checked) { if(layer_group) {layer_group.addTo(map); updateScores();} }
+      else if(layer_group && map.hasLayer(layer_group)) map.removeLayer(layer_group);
+    }
+
+    // CONTROL BOX MENU
+    const controlBox = document.getElementById('control-box');
+    const toggleMenuBtn = document.getElementById('toggle-menu-btn');
+    const closeMenuBtn = document.getElementById('close-menu-btn');
+    closeMenuBtn.onclick = () => { controlBox.style.display = 'none'; toggleMenuBtn.style.display = 'block'; };
+    toggleMenuBtn.onclick = () => { controlBox.style.display = 'flex'; toggleMenuBtn.style.display = 'none'; };
+    controlBox.style.display = 'flex';
+
+    // INFO ICONS
+    const infoIcon = document.getElementById('info-icon');
+    const infoText = document.getElementById('info-text');
+    infoIcon.onclick = e => { e.stopPropagation(); infoText.style.display = infoText.style.display==='block'?'none':'block'; };
+    document.addEventListener('click', e => { if (!infoIcon.contains(e.target) && !infoText.contains(e.target)) infoText.style.display = 'none'; });
+    document.getElementById('legend-info-toggle').onclick = function () {
+      const info = document.getElementById('legend-info');
+      info.style.display = info.style.display === 'none' ? 'block' : 'none';
+      this.title = info.style.display === 'block' ? 'Hide info' : 'Show info';
+    };
+    document.getElementById('legend-toggle').onclick = function () {
+      const legend = document.getElementById('legend');
+      if (legend.style.height === '30px') {
+        legend.style.height = ''; this.textContent = '−'; this.title = 'Toggle legend';
+      } else {
+        legend.style.height = '30px'; this.textContent = '+'; this.title = 'Show full legend';
+      }
+    };
+
+    // TEKENEN EN SELECTIE
+    const drawnItems = new L.FeatureGroup().addTo(map);
+    let selectedFeatures = [];
+    // Patch Leaflet.Draw area display (km² ipv ha)
+    var LDraw = window.L.Draw ? window.L.Draw : window.L.draw;
+    if (LDraw && LDraw.Tooltip && LDraw.Tooltip.prototype) {
+      LDraw.Tooltip.prototype._formatArea = function(area) {
+        var km2 = area / 1e6;
+        return km2.toLocaleString('nl-NL', {maximumFractionDigits: 2}) + ' km²';
+      }
+    }
+    const drawControl = new L.Control.Draw({
+      position:"bottomright",
+      edit: { featureGroup: drawnItems, edit: false, remove: true },
+      draw: { polygon: true, rectangle: true, polyline: false, circle: false, marker: false, circlemarker: false }
+    });
+    map.addControl(drawControl);
+
+    map.on(L.Draw.Event.CREATED, function (event) {
+      const layer = event.layer;
+      drawnItems.clearLayers();
+      drawnItems.addLayer(layer);
+      const drawnGeoJSON = layer.toGeoJSON();
+      const selected = [];
+      let totalScore = 0, totalAreaSqMeters = 0;
+      if (layer_group) {
+        layer_group.eachLayer(function (featureLayer) {
+          const feature = featureLayer.toGeoJSON();
+          if (turf.booleanIntersects(drawnGeoJSON, feature)) {
+            selected.push(feature);
+            featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
+            totalScore += feature.properties.MCA_score || 0;
+            totalAreaSqMeters += turf.area(feature);
+          } else {
+            featureLayer.setStyle(styleFeature(featureLayer.feature));
+          }
         });
-        // BUS LAYER
-        fetch('data/busstops_030.json').then(r=>r.json()).then(data=>{
-            busLayer = L.geoJSON(data, {
-                pointToLayer: (f,latlng)=>L.circleMarker(latlng, {radius:2, fillColor:'#808080', color:'#000', weight:1, opacity:1, fillOpacity:0.5}),
-                onEachFeature: (f,layer)=>layer.bindPopup(`<strong>${f.properties.name||"Busstop"}</strong>`)
-            });
-        });
+      }
+      selectedFeatures = selected;
+      if(selected.length){
+        document.getElementById('selection-summary').innerHTML =
+          `Selected: <b>${selected.length}</b> gridcells<br>Area: <b>${(totalAreaSqMeters/1e6).toFixed(1)}</b> km²<br>Avg. score: <b>${(totalScore/selected.length).toFixed(2)}</b>`;
+        controlBox.classList.add('show-stats');
+      }
+    });
 
-        let gebouwenLayer = null;
+        // Clear selection summary or update UI accordingly
+        document.getElementById('selection-summary').innerHTML = '';
+      });
 
-        // Functie om de gebouwenlaag te laden
-        function loadGebouwenLayer() {
-            if (!gebouwenLayer) {
-                gebouwenLayer = L.geoJSON(null, {
-                    // hier kun je opties toevoegen, zoals style en onEachFeature
-                    style: {
-                        color: '#3388ff',
-                        weight: 2,
-                        opacity: 0.6,
-                        fillOpacity: 0.3,
-                    }
-                });
+    return container;
+  }
+});
+    
+    function clearSelectionAndStats() {
+      drawnItems.clearLayers();
+      selectedFeatures = [];
+      document.getElementById('selection-summary').innerHTML = '';
+      controlBox.classList.remove('show-stats');
+      if(layer_group) layer_group.eachLayer(featureLayer=>featureLayer.setStyle(styleFeature(featureLayer.feature)));
+    }
 
-                // laad de GeoJSON data
-                fetch('data/Gebouwen.geojson')
-                    .then(response => response.json())
-                    .then(data => {
-                        gebouwenLayer.addData(data);
-                    })
-                    .catch(err => console.error('Fout bij laden gebouwenlaag:', err));
-            }
-        }
-
-        // Eventlistener voor de checkbox
-        document.getElementById('toggle-buildings').addEventListener('change', function(e) {
-            if (e.target.checked) {
-                // laad de laag als die nog niet geladen is
-                loadGebouwenLayer();
-                // voeg toe aan de kaart
-                gebouwenLayer.addTo(map);
-            } else {
-                // verwijder laag van de kaart
-                if (gebouwenLayer) {
-                    map.removeLayer(gebouwenLayer);
-                }
-            }
-        });
-
-        // GRID LAYER (SUITABILITY)
-        let currentTransparency = 0.5;
-        function getColor(score) {
-            return score > 6 ? '#1a9641' :
-                   score > 4 ? '#a6d96a' :
-                   score > 2 ? '#fdae61' : '#d7191c';
-        }
-        function styleFeature(feature) {
-            return {
-                fillColor: getColor(feature.properties.MCA_score || 0),
-                weight: 0.3,
-                color: '#555',
-                fillOpacity: currentTransparency
-            };
-        }
-        function popFeature(feature, layer) {
-            layer.on({ mouseover: highlightFeature, mouseout: resetHighlight });
-            layer.bindPopup('Suitability index: ' + ((feature.properties.MCA_score || 0).toFixed(2)));
-        }
-        function highlightFeature(e) { e.target.setStyle({ weight: 2, color: '#666' }); }
-        function resetHighlight(e) { layer_group.resetStyle(e.target); }
-        fetch('data/gridlayer_mca_fitness.geojson').then(res=>res.json()).then(data=>{
-            layer_group = L.geoJSON(data, { style: styleFeature, onEachFeature: popFeature });
-            if(document.getElementById('toggle-grid').checked) {
-                layer_group.addTo(map); updateScores();
-            }
-        });
-
-        // OVERLAY/BASELAYER CONTROL
-        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'Tiles © Esri'});
-        L.control.layers(null, { "Satellite": satelliteLayer }, { position:'topright' }).addTo(map);
-
-        // GEMEENTEKAART
-        fetch('https://raw.githubusercontent.com/geosenso92/fitness-locator-map/main/data/gemkaart24.json').then(r=>r.json()).then(data=>{
-            L.geoJSON(data, {
-                filter: f=>f.properties.gemeentenaam!=="Utrecht",
-                style: { color: "#555", weight: 1, fillColor: "#f7f7f7", fillOpacity: 0.3 },
-                onEachFeature: (f,layer)=>{
-                    layer.bindTooltip(f.properties.gemeentenaam, {sticky:true});
-                    layer.on({
-                        mouseover: e=>{ e.target.setStyle({weight:2, color:'#000', fillOpacity:0.5}); e.target.openTooltip(); },
-                        mouseout: e=>{ layer.setStyle({ color: "#555", weight: 1, fillColor: "#f7f7f7", fillOpacity: 0.3 }); e.target.closeTooltip(); }
-                    });
-                }
-            }).addTo(map);
-        });
-
-        // SLIDERS EN BUTTONS
-        function updatePercentDisplay(idRange, idPercent) {
-            const range = document.getElementById(idRange);
-            const percent = document.getElementById(idPercent);
-            range.addEventListener('input', () => { percent.textContent = Math.round(parseFloat(range.value) * 100) + '%'; });
-        }
-        updatePercentDisplay('weight-fitness','percent-fitness');
-        updatePercentDisplay('weight-ov','percent-ov');
-        updatePercentDisplay('weight-pop','percent-pop');
-        updatePercentDisplay('transparency-slider','percent-transparency');
-
-        function updateScores() {
-            let w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
-            let w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
-            let w_pop = parseFloat(document.getElementById('weight-pop').value) || 0;
-            const sum = w_ov + w_fit + w_pop;
-            if(sum>0) { w_ov/=sum; w_fit/=sum; w_pop/=sum; } else { w_ov=0.2; w_fit=0.3; w_pop=0.5; }
-            document.getElementById('weight-ov').value = w_ov.toFixed(3);
-            document.getElementById('percent-ov').textContent = Math.round(w_ov*100)+'%';
-            document.getElementById('weight-fitness').value = w_fit.toFixed(3);
-            document.getElementById('percent-fitness').textContent = Math.round(w_fit*100)+'%';
-            document.getElementById('weight-pop').value = w_pop.toFixed(3);
-            document.getElementById('percent-pop').textContent = Math.round(w_pop*100)+'%';
-            if (layer_group) {
-                layer_group.eachLayer(layer => {
-                    const p = layer.feature.properties;
-                    const ov = parseFloat(p.score_bus) || 0;
-                    const fit = parseFloat(p.score_fit) || 0;
-                    const pop = parseFloat(p.score_pop) || 0;
-                    p.MCA_score = w_ov * ov + w_fit * fit + w_pop * pop;
-                    layer.setStyle(styleFeature(layer.feature));
-                    layer.bindPopup('Suitability index: ' + p.MCA_score.toFixed(2));
-                });
-            }
-        }
-        document.getElementById('update-btn').onclick = updateScores;
-        document.getElementById('transparency-slider').oninput = e => {
-            currentTransparency = parseFloat(e.target.value);
-            document.getElementById('percent-transparency').textContent = Math.round(currentTransparency*100)+'%';
-            if(layer_group) layer_group.setStyle(layer=>({...styleFeature(layer.feature)}));
-        };
-        document.getElementById('reset-btn').onclick = function() {
-            document.getElementById('weight-fitness').value = 0.3;
-            document.getElementById('weight-ov').value = 0.2;
-            document.getElementById('weight-pop').value = 0.5;
-            document.getElementById('transparency-slider').value = 0.5;
-            document.getElementById('percent-fitness').textContent = '30%';
-            document.getElementById('percent-ov').textContent = '20%';
-            document.getElementById('percent-pop').textContent = '50%';
-            document.getElementById('percent-transparency').textContent = '50%';
-            currentTransparency = 0.5;
-            if(layer_group) layer_group.setStyle(layer=>({...styleFeature(layer.feature)}));
-            updateScores();
-            clearSelectionAndStats();
-        };
-
-        // TOGGLE LAGEN
-        document.getElementById('toggle-gym').onchange = function() {
-            if(this.checked) { if(gymLayer) gymLayer.addTo(map); }
-            else if(gymLayer && map.hasLayer(gymLayer)) map.removeLayer(gymLayer);
-        }
-        document.getElementById('toggle-bus').onchange = function() {
-            if(this.checked) { if(busLayer) busLayer.addTo(map); }
-            else if(busLayer && map.hasLayer(busLayer)) map.removeLayer(busLayer);
-        }
-        document.getElementById('toggle-grid').onchange = function() {
-            if(this.checked) { if(layer_group) {layer_group.addTo(map); updateScores();} }
-            else if(layer_group && map.hasLayer(layer_group)) map.removeLayer(layer_group);
-        }
-
-        // CONTROL BOX MENU
-        const controlBox = document.getElementById('control-box');
-        const toggleMenuBtn = document.getElementById('toggle-menu-btn');
-        const closeMenuBtn = document.getElementById('close-menu-btn');
-        closeMenuBtn.onclick = () => { controlBox.style.display = 'none'; toggleMenuBtn.style.display = 'block'; };
-        toggleMenuBtn.onclick = () => { controlBox.style.display = 'flex'; toggleMenuBtn.style.display = 'none'; };
-        controlBox.style.display = 'flex';
-
-        // INFO ICONS
-        const infoIcon = document.getElementById('info-icon');
-        const infoText = document.getElementById('info-text');
-        infoIcon.onclick = e => { e.stopPropagation(); infoText.style.display = infoText.style.display==='block'?'none':'block'; };
-        document.addEventListener('click', e => { if (!infoIcon.contains(e.target) && !infoText.contains(e.target)) infoText.style.display = 'none'; });
-        document.getElementById('legend-info-toggle').onclick = function () {
-            const info = document.getElementById('legend-info');
-            info.style.display = info.style.display === 'none' ? 'block' : 'none';
-            this.title = info.style.display === 'block' ? 'Hide info' : 'Show info';
-        };
-        document.getElementById('legend-toggle').onclick = function () {
-            const legend = document.getElementById('legend');
-            if (legend.style.height === '30px') {
-                legend.style.height = ''; this.textContent = '−'; this.title = 'Toggle legend';
-            } else {
-                legend.style.height = '30px'; this.textContent = '+'; this.title = 'Show full legend';
-            }
-        };
-
-        // --- DRAW & SELECTION TOOLS ---
-
-        const drawnItems = new L.FeatureGroup().addTo(map);
-        let selectedFeatures = [];
-        let singleSelectMode = false;
-        let lastSelectedLayer = null;
-
-        // Patch Leaflet.Draw area display (km² ipv ha)
-        var LDraw = window.L.Draw ? window.L.Draw : window.L.draw;
-        if (LDraw && LDraw.Tooltip && LDraw.Tooltip.prototype) {
-            LDraw.Tooltip.prototype._formatArea = function(area) {
-                var km2 = area / 1e6;
-                return km2.toLocaleString('nl-NL', {maximumFractionDigits: 2}) + ' km²';
-            }
-        }
-
-        // --- Custom L.Draw.SingleSelection handler ---
-        L.Draw.SingleSelection = L.Draw.Feature.extend({
-            initialize: function (map, options) {
-                this._map = map;
-                this._drawnItems = options.featureGroup; // The FeatureGroup to manage drawn items
-                this.type = options.type;                 // 'marker', 'polygon', 'rectangle'
-                this.options = options.shapeOptions || {}; // Options for the specific shape
-
-                L.setOptions(this, options);
-            },
-
-            addHooks: function () {
-                if (this._map) {
-                    // *** CRITICAL FOR SINGLE SELECTION: Clear existing layers ***
-                    this._drawnItems.clearLayers();
-                    clearSelectionAndStats(); // Clear any existing selection from the grid cells
-
-                    // Deactivate standard Leaflet.draw if active
-                    drawControl.disable();
-
-                    // Instantiate the correct Leaflet.draw handler based on type
-                    if (this.type === 'marker') {
-                        this._handler = new L.Draw.Marker(this._map, this.options);
-                    } else if (this.type === 'polygon') {
-                        this._handler = new L.Draw.Polygon(this._map, this.options);
-                    } else if (this.type === 'rectangle') {
-                        this._handler = new L.Draw.Rectangle(this._map, this.options);
-                    }
-                    // Add other types (circle, polyline) here if needed
-
-                    this._handler.enable(); // Enable the native Leaflet.draw handler
-
-                    this._map.on('draw:created', this._onDrawCreated, this);
-                    this._map.on('draw:drawstop', this._onDrawStop, this); // Listen for stop to re-enable default draw controls
-                }
-            },
-
-            removeHooks: function () {
-                if (this._map) {
-                    this._handler.disable(); // Disable the native Leaflet.draw handler
-                    this._map.off('draw:created', this._onDrawCreated, this);
-                    this._map.off('draw:drawstop', this._onDrawStop, this);
-                    // Re-enable default draw control if it was disabled by this single selection
-                    drawControl.enable();
-                }
-            },
-
-            _onDrawCreated: function (e) {
-                var layer = e.layer;
-                this._drawnItems.addLayer(layer);
-                // Perform selection on grid cells here
-                performAreaSelection(layer); // Pass the newly drawn layer to selection
-                this.disable(); // Disable this custom draw handler after a single feature is created
-            },
-
-            _onDrawStop: function () {
-                // If drawing was stopped (e.g., by hitting ESC) and not completed, re-enable default draw controls
-                if (!this._drawnItems.getLayers().length) { // Only re-enable if nothing was drawn
-                     drawControl.enable();
-                }
-            }
-        });
-
-        // --- Standard Draw Controls ---
-        const drawControl = new L.Control.Draw({
-            position:"bottomright", // Set initial position
-            edit: { featureGroup: drawnItems, edit: false, remove: true },
-            draw: {
-                polygon: { shapeOptions: { color: '#2C3E83' } },
-                rectangle: { shapeOptions: { color: '#2C3E83' } },
-                polyline: false,
-                circle: false,
-                marker: false,
-                circlemarker: false
-            }
-        });
-        map.addControl(drawControl);
-
-        // --- Dynamically Add Custom Buttons and Reorder ---
-        // We'll use a MutationObserver to ensure Leaflet.draw's toolbar is rendered
-        // before we try to manipulate its DOM.
-        const observer = new MutationObserver((mutationsList, observer) => {
-            const drawToolbarTop = document.querySelector('.leaflet-draw-toolbar.leaflet-draw-toolbar-top');
-            if (drawToolbarTop) {
-                // Disconnect observer once we found the element
-                observer.disconnect();
-
-                // Clear existing buttons to re-add in desired order
-                drawToolbarTop.innerHTML = '';
-
-                // Create instances of our custom single-selection handlers
-                const singleCellHandler = new L.Draw.SingleSelection(map, {
-                    type: 'marker', // For single cell, we don't draw, but use marker type to trigger click
-                    featureGroup: drawnItems
-                });
-                const singlePolygonDrawHandler = new L.Draw.SingleSelection(map, {
-                    type: 'polygon',
-                    featureGroup: drawnItems,
-                    shapeOptions: { color: '#f06eaa', fillOpacity: 0.5 }
-                });
-                const singleRectangleDrawHandler = new L.Draw.SingleSelection(map, {
-                    type: 'rectangle',
-                    featureGroup: drawnItems,
-                    shapeOptions: { color: '#00f0ea', fillOpacity: 0.5 }
-                });
-
-
-                // Function to create a draw button
-                const createDrawButton = (className, title, handler, customIconHtml = null) => {
-                    const button = document.createElement('a');
-                    button.href = '#';
-                    button.className = className + ' leaflet-bar-part';
-                    button.title = title;
-                    button.setAttribute('role', 'button');
-                    button.setAttribute('aria-label', title);
-                    if (customIconHtml) {
-                        button.innerHTML = customIconHtml;
-                    }
-                    drawToolbarTop.appendChild(button);
-
-                    L.DomEvent.disableClickPropagation(button);
-                    L.DomEvent.on(button, 'click', L.DomEvent.stop);
-                    L.DomEvent.on(button, 'click', () => {
-                        // Deactivate any active drawing mode before activating new one
-                        map.eachLayer(layer => {
-                            if (layer instanceof L.Draw.Feature) {
-                                layer.disable();
-                            }
-                        });
-                        deactivateStandardDrawControls(); // Ensure standard controls are deactivated
-                        clearSelectionAndStats(); // Clear selection when activating a new draw mode
-                        handler.enable();
-                    });
-                    return button;
-                };
-
-                // Add buttons in the desired vertical order
-                // 1. Single selection button (icon: vertical bars)
-                createDrawButton('leaflet-draw-draw-singlecell', 'Select single cell', singleCellHandler, `
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 2v10" /><path d="M9 5v9" /><path d="M15 6v7" /><path d="M6 8v10" /><path d="M18 9v8" />
-                    </svg>
-                `);
-
-                // 2. Polygon button
-                const polygonButton = createDrawButton('leaflet-draw-draw-polygon', 'Draw a polygon', singlePolygonDrawHandler);
-                // Ensure the background position for the icon is correct
-                polygonButton.style.backgroundPosition = '-31px -2px';
-
-
-                // 3. Rectangle button
-                const rectangleButton = createDrawButton('leaflet-draw-draw-rectangle', 'Draw a rectangle', singleRectangleDrawHandler);
-                // Ensure the background position for the icon is correct
-                rectangleButton.style.backgroundPosition = '-62px -2px';
-
-
-                // 4. Delete button (from edit toolbar, if desired)
-                const deleteButton = createDrawButton('leaflet-draw-edit-remove', 'Delete drawn items', {
-                    enable: () => {
-                        clearSelectionAndStats();
-                        // This specifically enables the "delete" mode from Leaflet.draw's edit toolbar
-                        if (drawControl.get:'edit')) {
-                            drawControl.get:'edit').enable();
-                        } else {
-                            console.warn("Edit control not found for delete button.");
-                        }
-                    }
-                });
-                deleteButton.style.backgroundPosition = '-182px -2px'; // Correct position for trash icon
-
-
-                // Deactivate all standard draw tools initially
-                deactivateStandardDrawControls();
-            }
-        });
-
-        // Start observing the map container for changes (where Leaflet.draw adds its controls)
-        observer.observe(document.getElementById('map'), { childList: true, subtree: true });
-
-        // Function to deactivate the standard Leaflet.draw tools
-        function deactivateStandardDrawControls() {
-            // Iterate through all possible draw handlers and disable them
-            // This is a bit of a hack as Leaflet.draw doesn't expose a simple "disable all"
-            const drawTools = ['polygon', 'rectangle', 'polyline', 'circle', 'marker', 'circlemarker'];
-            drawTools.forEach(tool => {
-                if (drawControl.get:'draw:' + tool)) {
-                    drawControl.get:'draw:' + tool).disable();
-                }
-            });
-            // Also disable the edit and delete tools when a new draw mode is activated
-            if (drawControl.get:'edit')) {
-                drawControl.get:'edit').disable();
-            }
-            // Ensure the main toolbar active state is reset
-            const toolbar = document.querySelector('.leaflet-draw-toolbar');
-            if (toolbar) {
-                Array.from(toolbar.children).forEach(child => {
-                    child.classList.remove('leaflet-draw-toolbar-button-enabled');
-                });
-            }
-        }
-
-
-        // --- Selection Handlers ---
-        map.on('click', function(e) {
-            // Only proceed if singleSelectMode is active and layer_group is loaded
-            if (!singleSelectMode || !layer_group) return;
-
-            let clickedFeatureLayer = null;
-            layer_group.eachLayer(layer => {
-                // Check if click is within bounds of a feature's polygon
-                if (layer.getBounds().contains(e.latlng)) {
-                    // More precise check using turf.booleanPointInPolygon or a buffer
-                    // For simplicity, we'll assume getBounds is sufficient for grid cells.
-                    // If you need pixel-perfect, you'd use turf.point([e.latlng.lng, e.latlng.lat])
-                    // and turf.booleanPointInPolygon(point, layer.toGeoJSON())
-                    clickedFeatureLayer = layer;
-                }
-            });
-
-            // Clear previous selection visually and in data, unless Ctrl/Shift is held
-            if (!(e.originalEvent.ctrlKey || e.originalEvent.shiftKey)) {
-                if (lastSelectedLayer && lastSelectedLayer !== clickedFeatureLayer) {
-                    lastSelectedLayer.setStyle(styleFeature(lastSelectedLayer.feature));
-                }
-                selectedFeatures = []; // Clear array for single selection
-            }
-
-            if (clickedFeatureLayer) {
-                const feature = clickedFeatureLayer.feature;
-                const index = selectedFeatures.indexOf(feature);
-
-                if (e.originalEvent.ctrlKey || e.originalEvent.shiftKey) {
-                    if (index > -1) {
-                        // Deselect
-                        selectedFeatures.splice(index, 1);
-                        clickedFeatureLayer.setStyle(styleFeature(feature));
-                    } else {
-                        // Select
-                        selectedFeatures.push(feature);
-                        clickedFeatureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
-                    }
-                } else {
-                    // Single select (no Ctrl/Shift)
-                    selectedFeatures = [feature]; // Set as the only selected feature
-                    clickedFeatureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
-                }
-                lastSelectedLayer = clickedFeatureLayer; // Update last selected layer
-            } else {
-                // Clicked outside any feature and not multi-selecting, clear all
-                if (!(e.originalEvent.ctrlKey || e.originalEvent.shiftKey)) {
-                    clearSelectionAndStats();
-                }
-            }
-            updateSelectionSummary();
-        });
-
-
-        function performAreaSelection(drawnLayer) {
-            clearSelectionAndStats(); // Always clear previous selections before a new area draw
-            const drawnGeoJSON = drawnLayer.toGeoJSON();
-            const newlySelected = [];
-
-            if (layer_group) {
-                layer_group.eachLayer(function (featureLayer) {
-                    const feature = featureLayer.toGeoJSON();
-                    if (turf.booleanIntersects(drawnGeoJSON, feature)) {
-                        newlySelected.push(feature);
-                        featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
-                    } else {
-                        featureLayer.setStyle(styleFeature(featureLayer.feature));
-                    }
-                });
-            }
-            selectedFeatures = newlySelected;
-            updateSelectionSummary();
-        }
-
-        function updateSelectionSummary() {
-            if (selectedFeatures.length === 0) {
-                document.getElementById('selection-summary').innerHTML = '';
-                controlBox.classList.remove('show-stats');
-                return;
-            }
-
-            let totalScore = 0;
-            let totalAreaSqMeters = 0;
-
-            selectedFeatures.forEach(feature => {
-                totalScore += feature.properties.MCA_score || 0;
-                totalAreaSqMeters += turf.area(feature);
-            });
-
-            document.getElementById('selection-summary').innerHTML =
-                `Selected: <b>${selectedFeatures.length}</b> gridcell(s)<br>` +
-                `Area: <b>${(totalAreaSqMeters / 1e6).toFixed(3)}</b> km²<br>` +
-                `Avg. score: <b>${(totalScore / selectedFeatures.length).toFixed(2)}</b>`;
-
-            controlBox.classList.add('show-stats');
-        }
-
-        // Handle deletion of drawn items (from Leaflet.draw's edit toolbar)
-        map.on(L.Draw.Event.DELETED, function (event) {
-            clearSelectionAndStats(); // Clear selection and reset grid style when drawn items are deleted
-        });
-
-
-        function clearSelectionAndStats() {
-            drawnItems.clearLayers(); // Clears drawn rectangles/polygons
-            selectedFeatures = [];
-            lastSelectedLayer = null; // Clear last selected layer reference
-            document.getElementById('selection-summary').innerHTML = '';
-            controlBox.classList.remove('show-stats');
-            // Reset style of all grid cells
-            if(layer_group) {
-                layer_group.eachLayer(featureLayer => {
-                    featureLayer.setStyle(styleFeature(featureLayer.feature));
-                });
-            }
-        }
-
-        // EXPORT FUNCTIES
-        function exportSelectedAsCSV(selected) {
-            if (!selected.length) return;
-            let csv = "id,MCA_score,area_km2\n";
-            selected.forEach((f,i)=>{
-                const areaKm2 = turf.area(f) / 1e6;
-                csv += (f.properties.id||i)+","+ (f.properties.MCA_score||0)+","+areaKm2.toFixed(1)+"\n";
-            });
-            let blob = new Blob([csv], {type: "text/csv"});
-            let url = URL.createObjectURL(blob);
-            let link = document.createElement('a');
-            link.href = url;
-            link.download = 'selected_gridcells.csv';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-        function exportSelectedAsJSON(selected) {
-            let data = selected.map((f,i)=>{
-                const areaKm2 = turf.area(f) / 1e6;
-                return {...f.properties, area_km2:+areaKm2.toFixed(1)};
-            });
-            let blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
-            let url = URL.createObjectURL(blob);
-            let link = document.createElement('a');
-            link.href = url;
-            link.download = 'selected_gridcells.json';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-        document.getElementById('export-btn').onclick = function() {
-            const opts = document.getElementById('export-options');
-            opts.classList.toggle('hidden');
-        }
-        document.getElementById('export-csv-btn').onclick = function(){ exportSelectedAsCSV(selectedFeatures);}
-        document.getElementById('export-json-btn').onclick = function(){ exportSelectedAsJSON(selectedFeatures);}
-        document.addEventListener('click',function(e){
-            const expBtn = document.getElementById('export-btn');
-            const opts = document.getElementById('export-options');
-            if(opts && !opts.classList.contains('hidden') && !expBtn.contains(e.target)) opts.classList.add('hidden');
-        });
-    </script>
+    // EXPORT FUNCTIES
+    function exportSelectedAsCSV(selected) {
+      if (!selected.length) return;
+      let csv = "id,MCA_score,area_km2\n";
+      selected.forEach((f,i)=>{
+        const areaKm2 = turf.area(f) / 1e6;
+        csv += (f.properties.id||i)+","+ (f.properties.MCA_score||0)+","+areaKm2.toFixed(1)+"\n";
+      });
+      let blob = new Blob([csv], {type: "text/csv"});
+      let url = URL.createObjectURL(blob);
+      let link = document.createElement('a');
+      link.href = url;
+      link.download = 'selected_gridcells.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    function exportSelectedAsJSON(selected) {
+      let data = selected.map((f,i)=>{
+        const areaKm2 = turf.area(f) / 1e6;
+        return {...f.properties, area_km2:+areaKm2.toFixed(1)};
+      });
+      let blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+      let url = URL.createObjectURL(blob);
+      let link = document.createElement('a');
+      link.href = url;
+      link.download = 'selected_gridcells.json';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    document.getElementById('export-btn').onclick = function() {
+      const opts = document.getElementById('export-options');
+      opts.classList.toggle('hidden');
+    }
+    document.getElementById('export-csv-btn').onclick = function(){ exportSelectedAsCSV(selectedFeatures);}
+    document.getElementById('export-json-btn').onclick = function(){ exportSelectedAsJSON(selectedFeatures);}
+    document.addEventListener('click',function(e){
+      const expBtn = document.getElementById('export-btn');
+      const opts = document.getElementById('export-options');
+      if(opts && !opts.classList.contains('hidden') && !expBtn.contains(e.target)) opts.classList.add('hidden');
+    });
+  </script>
 </body>
 </html>
