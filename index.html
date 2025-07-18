@@ -90,22 +90,24 @@
     .leaflet-div-icon.leaflet-editing-icon { background: #fff; border: 1px solid #333; box-shadow: none; }
     .leaflet-div-icon.leaflet-draw-edit-move { background: #fff; border: 1px solid #555; box-shadow: none; }
 
-/* Style for custom single-select button */
-.leaflet-draw-toolbar .leaflet-draw-single-select a {
-  width: 8px;
-  height: 8px;
+    /* Style for custom single-select button */
+.leaflet-draw-toolbar .leaflet-draw-draw-singlecell {
+  width: 34px;
+  height: 34px;
   line-height: 34px;
-  font-size: 8px;
+  display: inline-block;
   text-align: center;
+  background: #fff;
+  border-radius: 4px;
+  margin-left: 2px;
   cursor: pointer;
-  display: block;
-  user-select: none;
+  border: 1px solid #bbb;
 }
-/* Active state styling */
-.leaflet-draw-toolbar .leaflet-draw-single-select a.active {
-  background-color: #ddd;
+.leaflet-draw-toolbar .leaflet-draw-draw-singlecell.active {
+  background: #ddd;
+  border-color: #2C3E83;
 }
-    
+
     /* Hide export/selection UI unless needed */
     #stats-export-container, #export-csv-btn, #export-json-btn, #selection-summary { display: none; }
     .control-box.show-stats #stats-export-container,
@@ -435,106 +437,97 @@ document.getElementById('toggle-buildings').addEventListener('change', function(
       }
     };
 
-    // TEKENEN EN SELECTIE   
-    const drawnItems = new L.FeatureGroup().addTo(map);
-    let selectedFeatures = [];
-    // Patch Leaflet.Draw area display (km² ipv ha)
-    var LDraw = window.L.Draw ? window.L.Draw : window.L.draw;
-    if (LDraw && LDraw.Tooltip && LDraw.Tooltip.prototype) {
-      LDraw.Tooltip.prototype._formatArea = function(area) {
-        var km2 = area / 1e6;
-        return km2.toLocaleString('nl-NL', {maximumFractionDigits: 2}) + ' km²';
-      }
-    }
-    const drawControl = new L.Control.Draw({
-      position:"bottomright",
-      edit: { featureGroup: drawnItems, edit: false, remove: true },
-      draw: { polygon: true, rectangle: true, polyline: false, circle: false, marker: false, circlemarker: false }
-    });
-    map.addControl(drawControl);
+// --- DRAW & SELECTION TOOLS ---
 
-    map.on(L.Draw.Event.CREATED, function (event) {
-      const layer = event.layer;
-      drawnItems.clearLayers();
-      drawnItems.addLayer(layer);
-      const drawnGeoJSON = layer.toGeoJSON();
-      const selected = [];
-      let totalScore = 0, totalAreaSqMeters = 0;
-      if (layer_group) {
-        layer_group.eachLayer(function (featureLayer) {
-          const feature = featureLayer.toGeoJSON();
-          if (turf.booleanIntersects(drawnGeoJSON, feature)) {
-            selected.push(feature);
-            featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
-            totalScore += feature.properties.MCA_score || 0;
-            totalAreaSqMeters += turf.area(feature);
-          } else {
-            featureLayer.setStyle(styleFeature(featureLayer.feature));
-          }
-        });
-      }
-      selectedFeatures = selected;
-      if(selected.length){
-        document.getElementById('selection-summary').innerHTML =
-          `Selected: <b>${selected.length}</b> gridcells<br>Area: <b>${(totalAreaSqMeters/1e6).toFixed(1)}</b> km²<br>Avg. score: <b>${(totalScore/selected.length).toFixed(2)}</b>`;
-        controlBox.classList.add('show-stats');
-      }
-    });
-
+const drawnItems = new L.FeatureGroup().addTo(map);
+let selectedFeatures = [];
 let singleSelectMode = false;
 let lastSelectedLayer = null;
 
-// Create custom control styled like Leaflet.Draw toolbar buttons
-const SingleSelectControl = L.Control.extend({
-  options: { position: 'bottomright' },
-  onAdd: function () {
-    const container = L.DomUtil.create('div', 'leaflet-draw-toolbar leaflet-bar leaflet-draw-single-select');
-    const button = L.DomUtil.create('a', '', container);
-    button.href = '#';
-    button.title = 'Select single cell';
-button.innerHTML = `
-<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="grey" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M12 2v10" />
-  <path d="M9 5v9" />
-  <path d="M15 6v7" />
-  <path d="M6 8v10" />
-  <path d="M18 9v8" />
-</svg>`;
-    
-    L.DomEvent.disableClickPropagation(container);
-    L.DomEvent.on(button, 'click', L.DomEvent.preventDefault)
-      
-      .on(button, 'click', () => {
-  singleSelectMode = !singleSelectMode;
-  map.getContainer().style.cursor = singleSelectMode ? 'pointer' : '';
-  button.classList.toggle('active', singleSelectMode);
-
-  if (singleSelectMode) {
-    map.removeControl(drawControl); // ✅ Disable draw tools
-  } else {
-    map.addControl(drawControl);    // ✅ Re-enable draw tools
-    clearSelectionAndStats();      // ✅ Optional: reset selection
+// Patch Leaflet.Draw area display (km² ipv ha)
+var LDraw = window.L.Draw ? window.L.Draw : window.L.draw;
+if (LDraw && LDraw.Tooltip && LDraw.Tooltip.prototype) {
+  LDraw.Tooltip.prototype._formatArea = function(area) {
+    var km2 = area / 1e6;
+    return km2.toLocaleString('nl-NL', {maximumFractionDigits: 2}) + ' km²';
   }
+}
 
-  // Clear drawn shapes & reset styles
+// Draw Controls
+const drawControl = new L.Control.Draw({
+  position:"bottomright",
+  edit: { featureGroup: drawnItems, edit: false, remove: true },
+  draw: {
+    polygon: { shapeOptions: { color: '#2C3E83' } },
+    rectangle: { shapeOptions: { color: '#2C3E83' } },
+    polyline: false,
+    circle: false,
+    marker: false,
+    circlemarker: false
+  }
+});
+map.addControl(drawControl);
+
+// --- Add single-select button to the Draw toolbar ---
+// This injects the button as a sibling to polygon/rectangle draw buttons
+function addSingleSelectBtnToToolbar() {
+  const toolbar = document.querySelector('.leaflet-draw-toolbar-bottom');
+  if (!toolbar || toolbar.querySelector('.leaflet-draw-draw-singlecell')) return; // Already present
+
+  const btn = document.createElement('a');
+  btn.className = 'leaflet-draw-draw-singlecell leaflet-bar-part';
+  btn.href = '#';
+  btn.title = 'Select single cell';
+  btn.setAttribute('role', 'button');
+  btn.setAttribute('aria-label', 'Select single cell');
+  btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="grey" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2v10" />
+      <path d="M9 5v9" />
+      <path d="M15 6v7" />
+      <path d="M6 8v10" />
+      <path d="M18 9v8" />
+    </svg>`;
+  toolbar.appendChild(btn);
+
+  btn.addEventListener('click', function(e) {
+    e.preventDefault();
+    if (singleSelectMode) {
+      deactivateSingleSelect();
+    } else {
+      activateSingleSelect();
+    }
+  });
+}
+
+// Make sure the button is added after Leaflet.Draw renders
+map.on('draw:toolbaropened', addSingleSelectBtnToToolbar);
+window.addEventListener('DOMContentLoaded', () => setTimeout(addSingleSelectBtnToToolbar, 500));
+
+// Activate/deactivate single select mode
+function activateSingleSelect() {
+  singleSelectMode = true;
+  map.getContainer().style.cursor = 'pointer';
+  document.querySelector('.leaflet-draw-draw-singlecell').classList.add('active');
+  // Disable draw controls
+  map.removeControl(drawControl);
   drawnItems.clearLayers();
-
   if (lastSelectedLayer) {
     lastSelectedLayer.setStyle(styleFeature(lastSelectedLayer.feature));
     lastSelectedLayer = null;
   }
-
   document.getElementById('selection-summary').innerHTML = '';
   controlBox.classList.remove('show-stats');
-});
+}
 
-    return container;
-  }
-});
+function deactivateSingleSelect() {
+  singleSelectMode = false;
+  map.getContainer().style.cursor = '';
+  document.querySelector('.leaflet-draw-draw-singlecell').classList.remove('active');
+  map.addControl(drawControl);
+  clearSelectionAndStats();
+}
 
-map.addControl(new SingleSelectControl());
-
-// Map click handler for single selection
+// --- Selection Handlers ---
 map.on('click', function(e) {
   if (!singleSelectMode) return;
 
@@ -546,36 +539,67 @@ map.on('click', function(e) {
       layer.setStyle(styleFeature(layer.feature));
     }
   });
+  if (!clickedFeature) return;
 
-if (!(e.originalEvent.ctrlKey || e.originalEvent.shiftKey)) {
-  if (lastSelectedLayer && lastSelectedLayer !== clickedFeature) {
-    lastSelectedLayer.setStyle(styleFeature(lastSelectedLayer.feature));
-  }
-  drawnItems.clearLayers(); // remove previous single selections
-  selectedFeatures = [];
-}
-
-    clickedFeature.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
-    lastSelectedLayer = clickedFeature;
-
-    const score = clickedFeature.feature.properties.MCA_score || 0;
-    const area = turf.area(clickedFeature.toGeoJSON());
-
-    document.getElementById('selection-summary').innerHTML =
-      `Selected: <b>1</b> gridcell<br>` +
-      `Area: <b>${(area / 1e6).toFixed(3)}</b> km²<br>` +
-      `Score: <b>${score.toFixed(2)}</b>`;
-
-    controlBox.classList.add('show-stats'); // ✅ Safe to use here
-  }
-    
-    function clearSelectionAndStats() {
-      drawnItems.clearLayers();
-      selectedFeatures = [];
-      document.getElementById('selection-summary').innerHTML = '';
-      controlBox.classList.remove('show-stats');
-      if(layer_group) layer_group.eachLayer(featureLayer=>featureLayer.setStyle(styleFeature(featureLayer.feature)));
+  if (!(e.originalEvent.ctrlKey || e.originalEvent.shiftKey)) {
+    if (lastSelectedLayer && lastSelectedLayer !== clickedFeature) {
+      lastSelectedLayer.setStyle(styleFeature(lastSelectedLayer.feature));
     }
+    drawnItems.clearLayers(); // remove previous single selections
+    selectedFeatures = [];
+  }
+
+  clickedFeature.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
+  lastSelectedLayer = clickedFeature;
+
+  const score = clickedFeature.feature.properties.MCA_score || 0;
+  const area = turf.area(clickedFeature.toGeoJSON());
+
+  document.getElementById('selection-summary').innerHTML =
+    `Selected: <b>1</b> gridcell<br>` +
+    `Area: <b>${(area / 1e6).toFixed(3)}</b> km²<br>` +
+    `Score: <b>${score.toFixed(2)}</b>`;
+
+  controlBox.classList.add('show-stats');
+});
+
+// Handle rectangle/polygon selection
+map.on(L.Draw.Event.CREATED, function (event) {
+  if (singleSelectMode) return; // ignore if single select active
+  const layer = event.layer;
+  drawnItems.clearLayers();
+  drawnItems.addLayer(layer);
+  const drawnGeoJSON = layer.toGeoJSON();
+  const selected = [];
+  let totalScore = 0, totalAreaSqMeters = 0;
+  if (layer_group) {
+    layer_group.eachLayer(function (featureLayer) {
+      const feature = featureLayer.toGeoJSON();
+      if (turf.booleanIntersects(drawnGeoJSON, feature)) {
+        selected.push(feature);
+        featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
+        totalScore += feature.properties.MCA_score || 0;
+        totalAreaSqMeters += turf.area(feature);
+      } else {
+        featureLayer.setStyle(styleFeature(featureLayer.feature));
+      }
+    });
+  }
+  selectedFeatures = selected;
+  if(selected.length){
+    document.getElementById('selection-summary').innerHTML =
+      `Selected: <b>${selected.length}</b> gridcells<br>Area: <b>${(totalAreaSqMeters/1e6).toFixed(1)}</b> km²<br>Avg. score: <b>${(totalScore/selected.length).toFixed(2)}</b>`;
+    controlBox.classList.add('show-stats');
+  }
+});
+
+function clearSelectionAndStats() {
+  drawnItems.clearLayers();
+  selectedFeatures = [];
+  document.getElementById('selection-summary').innerHTML = '';
+  controlBox.classList.remove('show-stats');
+  if(layer_group) layer_group.eachLayer(featureLayer=>featureLayer.setStyle(styleFeature(featureLayer.feature)));
+}
 
     // EXPORT FUNCTIES
     function exportSelectedAsCSV(selected) {
