@@ -477,6 +477,7 @@ document.getElementById('toggle-buildings').addEventListener('change', function(
       if(selected.length){
         document.getElementById('selection-summary').innerHTML =
           `Selected: <b>${selected.length}</b> gridcells<br>Area: <b>${(totalAreaSqMeters/1e6).toFixed(1)}</b> km²<br>Avg. score: <b>${(totalScore/selected.length).toFixed(2)}</b>`;
+        const controlBox = document.getElementById('control-box');
         controlBox.classList.add('show-stats');
       }
     });
@@ -492,44 +493,41 @@ const SingleSelectControl = L.Control.extend({
     const button = L.DomUtil.create('a', '', container);
     button.href = '#';
     button.title = 'Select single cell';
-  button.innerHTML = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="grey" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" >
-    <path d="M3 2L21 12L3 22V2Z" />
-    <line x1="21" y1="12" x2="14" y2="15" />
-  </svg>`;
+button.innerHTML = `
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="gray" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M12 4v16" />
+  <path d="M8 16h8" />
+  <path d="M8 12h8" />
+  <path d="M8 8h8" />
+</svg>
+`;
     
     L.DomEvent.disableClickPropagation(container);
     L.DomEvent.on(button, 'click', L.DomEvent.preventDefault)
+      
       .on(button, 'click', () => {
-        singleSelectMode = !singleSelectMode;
-        map.getContainer().style.cursor = singleSelectMode ? 'pointer' : '';
-        button.classList.toggle('active', singleSelectMode);
+  singleSelectMode = !singleSelectMode;
+  map.getContainer().style.cursor = singleSelectMode ? 'pointer' : '';
+  button.classList.toggle('active', singleSelectMode);
 
-        if (singleSelectMode) {
-          // Disable draw toolbar to avoid conflicts
-          drawControl._toolbars.draw.disable();
+  if (singleSelectMode) {
+    map.removeControl(drawControl); // ✅ Disable draw tools
+  } else {
+    map.addControl(drawControl);    // ✅ Re-enable draw tools
+    clearSelectionAndStats();      // ✅ Optional: reset selection
+  }
 
-          // Clear any existing drawn shapes
-          drawnItems.clearLayers();
+  // Clear drawn shapes & reset styles
+  drawnItems.clearLayers();
 
-          // Clear previous single selection highlight
-          if (lastSelectedLayer) {
-            lastSelectedLayer.setStyle(styleFeature(lastSelectedLayer.feature));
-            lastSelectedLayer = null;
-          }
-        } else {
-          // Re-enable draw toolbar when exiting single select mode
-          drawControl._toolbars.draw.enable();
+  if (lastSelectedLayer) {
+    lastSelectedLayer.setStyle(styleFeature(lastSelectedLayer.feature));
+    lastSelectedLayer = null;
+  }
 
-          // Reset styles on all layers
-          if (layer_group) {
-            layer_group.eachLayer(featureLayer => featureLayer.setStyle(styleFeature(featureLayer.feature)));
-          }
-        }
-
-        // Clear selection summary or update UI accordingly
-        document.getElementById('selection-summary').innerHTML = '';
-      });
+  document.getElementById('selection-summary').innerHTML = '';
+  controlBox.classList.remove('show-stats');
+});
 
     return container;
   }
