@@ -497,13 +497,6 @@ const SingleSelectControl = L.Control.extend({
     <path d="M3 2L21 12L3 22V2Z" />
     <line x1="21" y1="12" x2="14" y2="15" />
   </svg>`;
-
-document.getElementById('selection-summary').innerHTML =
-  `Selected: <b>1</b> gridcell<br>` +
-  `Area: <b>${(area / 1e6).toFixed(3)}</b> km²<br>` +
-  `Score: <b>${score.toFixed(2)}</b>`;
-
-controlBox.classList.add('show-stats');
     
     L.DomEvent.disableClickPropagation(container);
     L.DomEvent.on(button, 'click', L.DomEvent.preventDefault)
@@ -550,7 +543,6 @@ map.on('click', function(e) {
 
   let clickedFeature = null;
   layer_group.eachLayer(layer => {
-    // Check if clicked point is inside layer bounds
     if (layer.getBounds().contains(e.latlng)) {
       clickedFeature = layer;
     } else {
@@ -566,7 +558,6 @@ map.on('click', function(e) {
     clickedFeature.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
     lastSelectedLayer = clickedFeature;
 
-    // Show stats for selected cell
     const score = clickedFeature.feature.properties.MCA_score || 0;
     const area = turf.area(clickedFeature.toGeoJSON());
 
@@ -574,6 +565,8 @@ map.on('click', function(e) {
       `Selected: <b>1</b> gridcell<br>` +
       `Area: <b>${(area / 1e6).toFixed(3)}</b> km²<br>` +
       `Score: <b>${score.toFixed(2)}</b>`;
+
+    controlBox.classList.add('show-stats'); // ✅ Safe to use here
   }
 });
     
