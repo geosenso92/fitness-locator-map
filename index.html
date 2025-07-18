@@ -436,6 +436,9 @@ document.getElementById('toggle-buildings').addEventListener('change', function(
     };
 
     // TEKENEN EN SELECTIE
+    const controlBox = document.getElementById('control-box');
+let selectedFeatures = [];
+    
     const drawnItems = new L.FeatureGroup().addTo(map);
     let selectedFeatures = [];
     // Patch Leaflet.Draw area display (km² ipv ha)
@@ -494,13 +497,13 @@ const SingleSelectControl = L.Control.extend({
     button.href = '#';
     button.title = 'Select single cell';
 button.innerHTML = `
-<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="gray" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M12 4v16" />
-  <path d="M8 16h8" />
-  <path d="M8 12h8" />
-  <path d="M8 8h8" />
-</svg>
-`;
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="grey" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M12 2v10" />
+  <path d="M9 5v9" />
+  <path d="M15 6v7" />
+  <path d="M6 8v10" />
+  <path d="M18 9v8" />
+</svg>`;
     
     L.DomEvent.disableClickPropagation(container);
     L.DomEvent.on(button, 'click', L.DomEvent.preventDefault)
@@ -548,10 +551,13 @@ map.on('click', function(e) {
     }
   });
 
-  if (clickedFeature) {
-    if (lastSelectedLayer && lastSelectedLayer !== clickedFeature) {
-      lastSelectedLayer.setStyle(styleFeature(lastSelectedLayer.feature));
-    }
+if (!(e.originalEvent.ctrlKey || e.originalEvent.shiftKey)) {
+  if (lastSelectedLayer && lastSelectedLayer !== clickedFeature) {
+    lastSelectedLayer.setStyle(styleFeature(lastSelectedLayer.feature));
+  }
+  drawnItems.clearLayers(); // remove previous single selections
+  selectedFeatures = [];
+}
 
     clickedFeature.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
     lastSelectedLayer = clickedFeature;
