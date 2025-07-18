@@ -22,8 +22,8 @@
       background: white; display: flex; align-items: center; padding: 0 15px;
       z-index: 1200; user-select: none;
     }
-    #logo { height: 30px; margin-right: 15px; }
-    #page-title { font-size: 22px; font-weight: 700; color: #2C3E83; }
+    #logo { height: 40px; margin-right: 15px; }
+    #page-title { font-size: 18px; font-weight: 700; color: #2C3E83; }
     #map {
       position: absolute; top: 50px; left: 0; right: 0; bottom: 0;
       z-index: 0; background: #eee;
@@ -136,9 +136,9 @@
     </div>
     <div class="control-row">
       <input type="checkbox" id="toggle-pop" class="layer-toggle" title="Show population density" />
-      <label for="weight-ov">Population density</label>
-      <input type="range" min="0" max="1" step="0.01" id="weight-ov" value="0.50" />
-      <span id="percent-ov">50%</span>
+      <label for="weight-pop">Population density</label>
+      <input type="range" min="0" max="1" step="0.01" id="weight-pop" value="0.50" />
+      <span id="percent-pop">50%</span>
     </div>
     <button id="update-btn" type="button" style="position:relative;">
       Update suitability index
@@ -160,7 +160,7 @@
         
 </div>
     </div>
-    <label id="transparency-label" for="transparency-slider">Transparency of grid:
+    <label id="transparency-label" for="transparency-slider">Transparency of gridlayer:
       <input type="range" min="0" max="1" step="0.01" id="transparency-slider" value="0.5" />
       <span id="percent-transparency">50%</span>
     </label>
@@ -501,13 +501,26 @@ const SingleSelectControl = L.Control.extend({
         map.getContainer().style.cursor = singleSelectMode ? 'pointer' : '';
         button.classList.toggle('active', singleSelectMode);
 
-        // Clear any existing drawn shapes to avoid conflicts
-        drawnItems.clearLayers();
+        if (singleSelectMode) {
+          // Disable draw toolbar to avoid conflicts
+          drawControl._toolbars.draw.disable();
 
-        // Optionally clear previous single selection highlight
-        if (lastSelectedLayer) {
-          lastSelectedLayer.setStyle(styleFeature(lastSelectedLayer.feature));
-          lastSelectedLayer = null;
+          // Clear any existing drawn shapes
+          drawnItems.clearLayers();
+
+          // Clear previous single selection highlight
+          if (lastSelectedLayer) {
+            lastSelectedLayer.setStyle(styleFeature(lastSelectedLayer.feature));
+            lastSelectedLayer = null;
+          }
+        } else {
+          // Re-enable draw toolbar when exiting single select mode
+          drawControl._toolbars.draw.enable();
+
+          // Reset styles on all layers
+          if (layer_group) {
+            layer_group.eachLayer(featureLayer => featureLayer.setStyle(styleFeature(featureLayer.feature)));
+          }
         }
 
         // Clear selection summary or update UI accordingly
