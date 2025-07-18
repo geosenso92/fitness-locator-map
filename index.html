@@ -18,14 +18,14 @@
       overflow: hidden;
     }
     #header-container {
-      position: absolute; top: 0; left: 0; right: 0; height: 80px;
+      position: absolute; top: 0; left: 0; right: 0; height: 50px;
       background: white; display: flex; align-items: center; padding: 0 15px;
       z-index: 1200; user-select: none;
     }
-    #logo { height: 60px; margin-right: 15px; }
-    #page-title { font-size: 22px; font-weight: 700; color: #222; }
+    #logo { height: 30px; margin-right: 15px; }
+    #page-title { font-size: 22px; font-weight: 700; color: #2C3E83; }
     #map {
-      position: absolute; top: 80px; left: 0; right: 0; bottom: 0;
+      position: absolute; top: 50px; left: 0; right: 0; bottom: 0;
       z-index: 0; background: #eee;
     }
     .control-box {
@@ -34,14 +34,14 @@
       border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
       z-index: 1100; font-size: 12px; display: flex; flex-direction: column; gap: 10px;
     }
-    .control-box-title { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #2C3E83; }
+    .control-box-title { text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #2C3E83; }
     .control-row { display: flex; align-items: center; gap: 8px; }
     .layer-toggle { cursor: pointer; width: 12px; height: 12px; margin-left: 8px; }
     .inline-checkbox { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
     .inline-checkbox input[type="checkbox"] { margin: 0; }
     .slider-label { display: flex; align-items: center; gap: 6px; }
     #reset-btn, #update-btn {
-      margin-top: 6px; width: 100%; padding: 7px; font-size: 12px;
+      margin-top: 3px; width: 100%; padding: 7px; font-size: 12px;
       background: #2C3E83; color: white; border: none; border-radius: 4px; cursor: pointer;
     }
     #info-icon {
@@ -64,7 +64,7 @@
     }
     #close-menu-btn { margin-top: 8px; }
     .legend {
-      position: absolute; bottom: 10px; left: 10px; padding: 8px 12px; background: white;
+      position: absolute; bottom: 10px; left: 10px; padding: 8px 12px; background: rgba(255, 255, 255, 0.75);
       font-size: 12px; border-radius: 6px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
       z-index: 1100; width: 180px; user-select: none;
     }
@@ -89,6 +89,23 @@
     }
     .leaflet-div-icon.leaflet-editing-icon { background: #fff; border: 1px solid #333; box-shadow: none; }
     .leaflet-div-icon.leaflet-draw-edit-move { background: #fff; border: 1px solid #555; box-shadow: none; }
+
+/* Style for custom single-select button */
+.leaflet-draw-toolbar .leaflet-draw-single-select a {
+  width: 8px;
+  height: 8px;
+  line-height: 34px;
+  font-size: 8px;
+  text-align: center;
+  cursor: pointer;
+  display: block;
+  user-select: none;
+}
+/* Active state styling */
+.leaflet-draw-toolbar .leaflet-draw-single-select a.active {
+  background-color: #ddd;
+}
+    
     /* Hide export/selection UI unless needed */
     #stats-export-container, #export-csv-btn, #export-json-btn, #selection-summary { display: none; }
     .control-box.show-stats #stats-export-container,
@@ -100,27 +117,29 @@
 <body>
   <div id="header-container">
     <img id="logo" src="data/NewLogo21.png" alt="Logo" />
-    <div id="page-title">Dashboard Location Finder (demo: fitnesscenter)</div>
+    <div id="page-title">Dashboard Location Finder (demo: gym)</div>
   </div>
   <div id="map"></div>
   <div class="control-box" id="control-box">
     <h2 class="control-box-title">Weighting factors (MCA)</h2>
     <div class="control-row">
       <input type="checkbox" id="toggle-gym" class="layer-toggle" title="Show gym locations" />
-      <label for="weight-fitness">Proximity to gym(s):</label>
+      <label for="weight-fitness">Proximity to gym(s)</label>
       <input type="range" min="0" max="1" step="0.01" id="weight-fitness" value="0.30" />
       <span id="percent-fitness">30%</span>
     </div>
     <div class="control-row">
       <input type="checkbox" id="toggle-bus" class="layer-toggle" title="Show bus locations" />
-      <label for="weight-ov">Proximity to public transport:</label>
-      <input type="range" min="0" max="1" step="0.01" id="weight-ov" value="0.30" />
+      <label for="weight-ov">Proximity to public transport</label>
+      <input type="range" min="0" max="1" step="0.01" id="weight-ov" value="0.20" />
       <span id="percent-ov">30%</span>
     </div>
-    <label for="weight-pop">Population density:
-      <input type="range" min="0" max="1" step="0.01" id="weight-pop" value="0.50" />
-      <span id="percent-pop">50%</span>
-    </label>
+    <div class="control-row">
+      <input type="checkbox" id="toggle-pop" class="layer-toggle" title="Show population density" />
+      <label for="weight-ov">Population density</label>
+      <input type="range" min="0" max="1" step="0.01" id="weight-ov" value="0.50" />
+      <span id="percent-ov">50%</span>
+    </div>
     <button id="update-btn" type="button" style="position:relative;">
       Update suitability index
       <div id="info-icon" style="display:inline-block;">i</div>
@@ -141,7 +160,7 @@
         
 </div>
     </div>
-    <label id="transparency-label" for="transparency-slider">Raster transparency:
+    <label id="transparency-label" for="transparency-slider">Transparency of grid:
       <input type="range" min="0" max="1" step="0.01" id="transparency-slider" value="0.5" />
       <span id="percent-transparency">50%</span>
     </label>
@@ -462,6 +481,78 @@ document.getElementById('toggle-buildings').addEventListener('change', function(
       }
     });
 
+let singleSelectMode = false;
+let lastSelectedLayer = null;
+
+// Create custom control styled like Leaflet.Draw toolbar buttons
+const SingleSelectControl = L.Control.extend({
+  options: { position: 'bottomright' },
+  onAdd: function () {
+    const container = L.DomUtil.create('div', 'leaflet-draw-toolbar leaflet-bar leaflet-draw-single-select');
+    const button = L.DomUtil.create('a', '', container);
+    button.href = '#';
+    button.title = 'Select single cell';
+    button.innerHTML = '☝️'; // Or replace with your icon/SVG
+
+    L.DomEvent.disableClickPropagation(container);
+    L.DomEvent.on(button, 'click', L.DomEvent.preventDefault)
+      .on(button, 'click', () => {
+        singleSelectMode = !singleSelectMode;
+        map.getContainer().style.cursor = singleSelectMode ? 'pointer' : '';
+        button.classList.toggle('active', singleSelectMode);
+
+        // Clear any existing drawn shapes to avoid conflicts
+        drawnItems.clearLayers();
+
+        // Optionally clear previous single selection highlight
+        if (lastSelectedLayer) {
+          lastSelectedLayer.setStyle(styleFeature(lastSelectedLayer.feature));
+          lastSelectedLayer = null;
+        }
+
+        // Clear selection summary or update UI accordingly
+        document.getElementById('selection-summary').innerHTML = '';
+      });
+
+    return container;
+  }
+});
+
+map.addControl(new SingleSelectControl());
+
+// Map click handler for single selection
+map.on('click', function(e) {
+  if (!singleSelectMode) return;
+
+  let clickedFeature = null;
+  layer_group.eachLayer(layer => {
+    // Check if clicked point is inside layer bounds
+    if (layer.getBounds().contains(e.latlng)) {
+      clickedFeature = layer;
+    } else {
+      layer.setStyle(styleFeature(layer.feature));
+    }
+  });
+
+  if (clickedFeature) {
+    if (lastSelectedLayer && lastSelectedLayer !== clickedFeature) {
+      lastSelectedLayer.setStyle(styleFeature(lastSelectedLayer.feature));
+    }
+
+    clickedFeature.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
+    lastSelectedLayer = clickedFeature;
+
+    // Show stats for selected cell
+    const score = clickedFeature.feature.properties.MCA_score || 0;
+    const area = turf.area(clickedFeature.toGeoJSON());
+
+    document.getElementById('selection-summary').innerHTML =
+      `Selected: <b>1</b> gridcell<br>` +
+      `Area: <b>${(area / 1e6).toFixed(3)}</b> km²<br>` +
+      `Score: <b>${score.toFixed(2)}</b>`;
+  }
+});
+    
     function clearSelectionAndStats() {
       drawnItems.clearLayers();
       selectedFeatures = [];
