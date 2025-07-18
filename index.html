@@ -480,13 +480,15 @@ function addSingleSelectBtnToToolbar() {
   btn.title = 'Select single cell';
   btn.setAttribute('role', 'button');
   btn.setAttribute('aria-label', 'Select single cell');
-  btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="grey" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 2v10" />
-      <path d="M9 5v9" />
-      <path d="M15 6v7" />
-      <path d="M6 8v10" />
-      <path d="M18 9v8" />
-    </svg>`;
+ btn.innerHTML = `
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="grey" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M12 2v10" />
+  <path d="M9 5v9" />
+  <path d="M15 6v7" />
+  <path d="M6 8v10" />
+  <path d="M18 9v8" />
+</svg>
+`;
   toolbar.appendChild(btn);
 
   btn.addEventListener('click', function(e) {
