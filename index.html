@@ -89,8 +89,29 @@
         .leaflet-div-icon.leaflet-editing-icon { background: #fff; border: 1px solid #333; box-shadow: none; }
         .leaflet-div-icon.leaflet-draw-edit-move { background: #fff; border: 1px solid #555; box-shadow: none; }
 
+        /* --- Custom CSS for Draw Toolbar Positioning and Single Selection Button --- */
+        /*
+         * This targets the specific Leaflet.draw toolbar that contains the
+         * drawing tools and repositions it to the bottom right, vertically.
+         */
+        .leaflet-draw-toolbar.leaflet-bar.leaflet-draw-toolbar-top { /* Using top here because the default drawControl often gets 'top' */
+            display: flex;
+            flex-direction: column; /* Stack buttons vertically */
+            position: absolute;
+            bottom: 20px;       /* Distance from the bottom of the map */
+            right: 20px;        /* Distance from the right of the map */
+            top: auto !important; /* Override default 'top' positioning from Leaflet.draw */
+            left: auto !important; /* Ensure it doesn't get stuck on the left */
+        }
+
+        /* Add some margin between buttons for better spacing */
+        .leaflet-draw-toolbar.leaflet-bar.leaflet-draw-toolbar-top a {
+            margin-bottom: 5px;
+        }
+
         /* Style for custom single-select button */
         .leaflet-draw-toolbar .leaflet-draw-draw-singlecell {
+            /* Standard button styling from Leaflet.draw */
             width: 34px;
             height: 34px;
             line-height: 34px;
@@ -98,20 +119,41 @@
             text-align: center;
             background: #fff;
             border-radius: 4px;
-            margin-left: 2px;
+            margin-left: 2px; /* Maintain small gap if it's not the first button */
             cursor: pointer;
             border: 1px solid #bbb;
+            /* Ensure its background is set if other 'a' tags have background-image: none !important; */
+            background-image: none !important;
         }
         .leaflet-draw-toolbar .leaflet-draw-draw-singlecell.active {
             background: #ddd;
             border-color: #2C3E83;
         }
-        /* Override default Leaflet Draw button styles to make it consistent */
-        .leaflet-draw-toolbar a {
-            background-image: none !important; /* Remove default icon background */
-        }
+        /* Icon within the single-select button (using SVG for flexibility) */
         .leaflet-draw-toolbar .leaflet-draw-draw-singlecell svg {
             vertical-align: middle; /* Center the SVG icon */
+            stroke: #333; /* Default icon color */
+        }
+        .leaflet-draw-toolbar .leaflet-draw-draw-singlecell.active svg {
+            stroke: #2C3E83; /* Icon color when active */
+        }
+
+        /* Ensure Leaflet.draw's default icons are correctly displayed */
+        /* This rule re-applies the spritesheet backgrounds for the standard buttons */
+        .leaflet-draw-toolbar a.leaflet-draw-draw-polygon,
+        .leaflet-draw-toolbar a.leaflet-draw-draw-rectangle {
+            background-image: url('https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/images/spritesheet.png') !important;
+            background-repeat: no-repeat;
+            background-position: center center; /* Reset to center for safety if overwritten */
+        }
+        .leaflet-draw-toolbar a.leaflet-draw-draw-polygon {
+            background-position: -31px -2px !important; /* Specific position for polygon icon */
+        }
+        .leaflet-draw-toolbar a.leaflet-draw-draw-rectangle {
+            background-position: -62px -2px !important; /* Specific position for rectangle icon */
+        }
+        .leaflet-draw-toolbar a.leaflet-draw-edit-remove {
+            background-position: -182px -2px !important; /* Specific position for delete icon */
         }
 
         /* Hide export/selection UI unless needed */
@@ -458,9 +500,72 @@
             }
         }
 
-        // Draw Controls
+        // --- Custom L.Draw.SingleSelection handler ---
+        L.Draw.SingleSelection = L.Draw.Feature.extend({
+            initialize: function (map, options) {
+                this._map = map;
+                this._drawnItems = options.featureGroup; // The FeatureGroup to manage drawn items
+                this.type = options.type;                 // 'marker', 'polygon', 'rectangle'
+                this.options = options.shapeOptions || {}; // Options for the specific shape
+
+                L.setOptions(this, options);
+            },
+
+            addHooks: function () {
+                if (this._map) {
+                    // *** CRITICAL FOR SINGLE SELECTION: Clear existing layers ***
+                    this._drawnItems.clearLayers();
+                    clearSelectionAndStats(); // Clear any existing selection from the grid cells
+
+                    // Deactivate standard Leaflet.draw if active
+                    drawControl.disable();
+
+                    // Instantiate the correct Leaflet.draw handler based on type
+                    if (this.type === 'marker') {
+                        this._handler = new L.Draw.Marker(this._map, this.options);
+                    } else if (this.type === 'polygon') {
+                        this._handler = new L.Draw.Polygon(this._map, this.options);
+                    } else if (this.type === 'rectangle') {
+                        this._handler = new L.Draw.Rectangle(this._map, this.options);
+                    }
+                    // Add other types (circle, polyline) here if needed
+
+                    this._handler.enable(); // Enable the native Leaflet.draw handler
+
+                    this._map.on('draw:created', this._onDrawCreated, this);
+                    this._map.on('draw:drawstop', this._onDrawStop, this); // Listen for stop to re-enable default draw controls
+                }
+            },
+
+            removeHooks: function () {
+                if (this._map) {
+                    this._handler.disable(); // Disable the native Leaflet.draw handler
+                    this._map.off('draw:created', this._onDrawCreated, this);
+                    this._map.off('draw:drawstop', this._onDrawStop, this);
+                    // Re-enable default draw control if it was disabled by this single selection
+                    drawControl.enable();
+                }
+            },
+
+            _onDrawCreated: function (e) {
+                var layer = e.layer;
+                this._drawnItems.addLayer(layer);
+                // Perform selection on grid cells here
+                performAreaSelection(layer); // Pass the newly drawn layer to selection
+                this.disable(); // Disable this custom draw handler after a single feature is created
+            },
+
+            _onDrawStop: function () {
+                // If drawing was stopped (e.g., by hitting ESC) and not completed, re-enable default draw controls
+                if (!this._drawnItems.getLayers().length) { // Only re-enable if nothing was drawn
+                     drawControl.enable();
+                }
+            }
+        });
+
+        // --- Standard Draw Controls ---
         const drawControl = new L.Control.Draw({
-            position:"bottomright",
+            position:"bottomright", // Set initial position
             edit: { featureGroup: drawnItems, edit: false, remove: true },
             draw: {
                 polygon: { shapeOptions: { color: '#2C3E83' } },
@@ -473,133 +578,205 @@
         });
         map.addControl(drawControl);
 
-        // --- Add single-select button to the Draw toolbar ---
-        // This injects the button as a sibling to polygon/rectangle draw buttons
-        function addSingleSelectBtnToToolbar() {
-            // Find the bottom toolbar specifically
-            const toolbarBottom = document.querySelector('.leaflet-draw-toolbar-bottom');
-            if (!toolbarBottom) {
-                console.warn("Leaflet.draw toolbar (bottom) not found. Retrying...");
-                setTimeout(addSingleSelectBtnToToolbar, 100); // Retry if not found yet
-                return;
-            }
-            if (toolbarBottom.querySelector('.leaflet-draw-draw-singlecell')) {
-                return; // Already present
-            }
-
-            const btn = document.createElement('a');
-            btn.className = 'leaflet-draw-draw-singlecell leaflet-bar-part';
-            btn.href = '#';
-            btn.title = 'Select single cell';
-            btn.setAttribute('role', 'button');
-            btn.setAttribute('aria-label', 'Select single cell');
-            btn.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="grey" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2v10" />
-                    <path d="M9 5v9" />
-                    <path d="M15 6v7" />
-                    <path d="M6 8v10" />
-                    <path d="M18 9v8" />
-                </svg>
-            `;
-            toolbarBottom.appendChild(btn); // Append to the bottom toolbar
-
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                if (singleSelectMode) {
-                    deactivateSingleSelect();
-                } else {
-                    activateSingleSelect();
-                }
-            });
-        }
-
-        // More robust way to ensure the button is added after Leaflet.Draw is ready
-        // Use a MutationObserver to watch for the creation of the toolbar
+        // --- Dynamically Add Custom Buttons and Reorder ---
+        // We'll use a MutationObserver to ensure Leaflet.draw's toolbar is rendered
+        // before we try to manipulate its DOM.
         const observer = new MutationObserver((mutationsList, observer) => {
-            const toolbarBottom = document.querySelector('.leaflet-draw-toolbar-bottom');
-            if (toolbarBottom) {
-                addSingleSelectBtnToToolbar();
-                observer.disconnect(); // Stop observing once the toolbar is found and button added
+            const drawToolbarTop = document.querySelector('.leaflet-draw-toolbar.leaflet-draw-toolbar-top');
+            if (drawToolbarTop) {
+                // Disconnect observer once we found the element
+                observer.disconnect();
+
+                // Clear existing buttons to re-add in desired order
+                drawToolbarTop.innerHTML = '';
+
+                // Create instances of our custom single-selection handlers
+                const singleCellHandler = new L.Draw.SingleSelection(map, {
+                    type: 'marker', // For single cell, we don't draw, but use marker type to trigger click
+                    featureGroup: drawnItems
+                });
+                const singlePolygonDrawHandler = new L.Draw.SingleSelection(map, {
+                    type: 'polygon',
+                    featureGroup: drawnItems,
+                    shapeOptions: { color: '#f06eaa', fillOpacity: 0.5 }
+                });
+                const singleRectangleDrawHandler = new L.Draw.SingleSelection(map, {
+                    type: 'rectangle',
+                    featureGroup: drawnItems,
+                    shapeOptions: { color: '#00f0ea', fillOpacity: 0.5 }
+                });
+
+
+                // Function to create a draw button
+                const createDrawButton = (className, title, handler, customIconHtml = null) => {
+                    const button = document.createElement('a');
+                    button.href = '#';
+                    button.className = className + ' leaflet-bar-part';
+                    button.title = title;
+                    button.setAttribute('role', 'button');
+                    button.setAttribute('aria-label', title);
+                    if (customIconHtml) {
+                        button.innerHTML = customIconHtml;
+                    }
+                    drawToolbarTop.appendChild(button);
+
+                    L.DomEvent.disableClickPropagation(button);
+                    L.DomEvent.on(button, 'click', L.DomEvent.stop);
+                    L.DomEvent.on(button, 'click', () => {
+                        // Deactivate any active drawing mode before activating new one
+                        map.eachLayer(layer => {
+                            if (layer instanceof L.Draw.Feature) {
+                                layer.disable();
+                            }
+                        });
+                        deactivateStandardDrawControls(); // Ensure standard controls are deactivated
+                        clearSelectionAndStats(); // Clear selection when activating a new draw mode
+                        handler.enable();
+                    });
+                    return button;
+                };
+
+                // Add buttons in the desired vertical order
+                // 1. Single selection button (icon: vertical bars)
+                createDrawButton('leaflet-draw-draw-singlecell', 'Select single cell', singleCellHandler, `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v10" /><path d="M9 5v9" /><path d="M15 6v7" /><path d="M6 8v10" /><path d="M18 9v8" />
+                    </svg>
+                `);
+
+                // 2. Polygon button
+                const polygonButton = createDrawButton('leaflet-draw-draw-polygon', 'Draw a polygon', singlePolygonDrawHandler);
+                // Ensure the background position for the icon is correct
+                polygonButton.style.backgroundPosition = '-31px -2px';
+
+
+                // 3. Rectangle button
+                const rectangleButton = createDrawButton('leaflet-draw-draw-rectangle', 'Draw a rectangle', singleRectangleDrawHandler);
+                // Ensure the background position for the icon is correct
+                rectangleButton.style.backgroundPosition = '-62px -2px';
+
+
+                // 4. Delete button (from edit toolbar, if desired)
+                const deleteButton = createDrawButton('leaflet-draw-edit-remove', 'Delete drawn items', {
+                    enable: () => {
+                        clearSelectionAndStats();
+                        // This specifically enables the "delete" mode from Leaflet.draw's edit toolbar
+                        if (drawControl.get:'edit')) {
+                            drawControl.get:'edit').enable();
+                        } else {
+                            console.warn("Edit control not found for delete button.");
+                        }
+                    }
+                });
+                deleteButton.style.backgroundPosition = '-182px -2px'; // Correct position for trash icon
+
+
+                // Deactivate all standard draw tools initially
+                deactivateStandardDrawControls();
             }
         });
 
-        // Start observing the map container for changes
+        // Start observing the map container for changes (where Leaflet.draw adds its controls)
         observer.observe(document.getElementById('map'), { childList: true, subtree: true });
 
-
-        // Activate/deactivate single select mode
-        function activateSingleSelect() {
-            singleSelectMode = true;
-            map.getContainer().style.cursor = 'pointer';
-            document.querySelector('.leaflet-draw-draw-singlecell').classList.add('active');
-            // Disable draw controls
-            drawControl.remove(); // Use remove() method
-            drawnItems.clearLayers();
-            if (lastSelectedLayer) {
-                lastSelectedLayer.setStyle(styleFeature(lastSelectedLayer.feature));
-                lastSelectedLayer = null;
+        // Function to deactivate the standard Leaflet.draw tools
+        function deactivateStandardDrawControls() {
+            // Iterate through all possible draw handlers and disable them
+            // This is a bit of a hack as Leaflet.draw doesn't expose a simple "disable all"
+            const drawTools = ['polygon', 'rectangle', 'polyline', 'circle', 'marker', 'circlemarker'];
+            drawTools.forEach(tool => {
+                if (drawControl.get:'draw:' + tool)) {
+                    drawControl.get:'draw:' + tool).disable();
+                }
+            });
+            // Also disable the edit and delete tools when a new draw mode is activated
+            if (drawControl.get:'edit')) {
+                drawControl.get:'edit').disable();
             }
-            document.getElementById('selection-summary').innerHTML = '';
-            controlBox.classList.remove('show-stats');
+            // Ensure the main toolbar active state is reset
+            const toolbar = document.querySelector('.leaflet-draw-toolbar');
+            if (toolbar) {
+                Array.from(toolbar.children).forEach(child => {
+                    child.classList.remove('leaflet-draw-toolbar-button-enabled');
+                });
+            }
         }
 
-        function deactivateSingleSelect() {
-            singleSelectMode = false;
-            map.getContainer().style.cursor = '';
-            document.querySelector('.leaflet-draw-draw-singlecell').classList.remove('active');
-            map.addControl(drawControl); // Add back the draw control
-            clearSelectionAndStats();
-        }
 
         // --- Selection Handlers ---
         map.on('click', function(e) {
-            if (!singleSelectMode || !layer_group) return; // Also check if layer_group is loaded
+            // Only proceed if singleSelectMode is active and layer_group is loaded
+            if (!singleSelectMode || !layer_group) return;
 
-            let clickedFeature = null;
+            let clickedFeatureLayer = null;
             layer_group.eachLayer(layer => {
+                // Check if click is within bounds of a feature's polygon
                 if (layer.getBounds().contains(e.latlng)) {
-                    clickedFeature = layer;
-                } else {
-                    // Reset style for all other features when not in multi-select (Ctrl/Shift) mode
-                    if (!(e.originalEvent.ctrlKey || e.originalEvent.shiftKey)) {
-                        layer.setStyle(styleFeature(layer.feature));
-                    }
+                    // More precise check using turf.booleanPointInPolygon or a buffer
+                    // For simplicity, we'll assume getBounds is sufficient for grid cells.
+                    // If you need pixel-perfect, you'd use turf.point([e.latlng.lng, e.latlng.lat])
+                    // and turf.booleanPointInPolygon(point, layer.toGeoJSON())
+                    clickedFeatureLayer = layer;
                 }
             });
 
-            if (!clickedFeature) {
-                // If clicked outside any feature, clear selection if not multi-select
+            // Clear previous selection visually and in data, unless Ctrl/Shift is held
+            if (!(e.originalEvent.ctrlKey || e.originalEvent.shiftKey)) {
+                if (lastSelectedLayer && lastSelectedLayer !== clickedFeatureLayer) {
+                    lastSelectedLayer.setStyle(styleFeature(lastSelectedLayer.feature));
+                }
+                selectedFeatures = []; // Clear array for single selection
+            }
+
+            if (clickedFeatureLayer) {
+                const feature = clickedFeatureLayer.feature;
+                const index = selectedFeatures.indexOf(feature);
+
+                if (e.originalEvent.ctrlKey || e.originalEvent.shiftKey) {
+                    if (index > -1) {
+                        // Deselect
+                        selectedFeatures.splice(index, 1);
+                        clickedFeatureLayer.setStyle(styleFeature(feature));
+                    } else {
+                        // Select
+                        selectedFeatures.push(feature);
+                        clickedFeatureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
+                    }
+                } else {
+                    // Single select (no Ctrl/Shift)
+                    selectedFeatures = [feature]; // Set as the only selected feature
+                    clickedFeatureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
+                }
+                lastSelectedLayer = clickedFeatureLayer; // Update last selected layer
+            } else {
+                // Clicked outside any feature and not multi-selecting, clear all
                 if (!(e.originalEvent.ctrlKey || e.originalEvent.shiftKey)) {
                     clearSelectionAndStats();
                 }
-                return;
             }
-
-            // Handle multi-selection with Ctrl/Shift
-            if (e.originalEvent.ctrlKey || e.originalEvent.shiftKey) {
-                const index = selectedFeatures.indexOf(clickedFeature.feature);
-                if (index > -1) {
-                    // Deselect if already selected
-                    selectedFeatures.splice(index, 1);
-                    clickedFeature.setStyle(styleFeature(clickedFeature.feature));
-                } else {
-                    // Select if not already selected
-                    selectedFeatures.push(clickedFeature.feature);
-                    clickedFeature.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
-                }
-            } else {
-                // Single selection mode (no Ctrl/Shift)
-                if (lastSelectedLayer && lastSelectedLayer !== clickedFeature) {
-                    lastSelectedLayer.setStyle(styleFeature(lastSelectedLayer.feature));
-                }
-                // Clear all previous selections if not multi-select
-                selectedFeatures = [clickedFeature.feature];
-                clickedFeature.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
-            }
-            lastSelectedLayer = clickedFeature;
             updateSelectionSummary();
         });
+
+
+        function performAreaSelection(drawnLayer) {
+            clearSelectionAndStats(); // Always clear previous selections before a new area draw
+            const drawnGeoJSON = drawnLayer.toGeoJSON();
+            const newlySelected = [];
+
+            if (layer_group) {
+                layer_group.eachLayer(function (featureLayer) {
+                    const feature = featureLayer.toGeoJSON();
+                    if (turf.booleanIntersects(drawnGeoJSON, feature)) {
+                        newlySelected.push(feature);
+                        featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
+                    } else {
+                        featureLayer.setStyle(styleFeature(featureLayer.feature));
+                    }
+                });
+            }
+            selectedFeatures = newlySelected;
+            updateSelectionSummary();
+        }
 
         function updateSelectionSummary() {
             if (selectedFeatures.length === 0) {
@@ -624,46 +801,24 @@
             controlBox.classList.add('show-stats');
         }
 
-        // Handle rectangle/polygon selection
-        map.on(L.Draw.Event.CREATED, function (event) {
-            if (singleSelectMode) return; // ignore if single select active
-            const layer = event.layer;
-            drawnItems.clearLayers();
-            drawnItems.addLayer(layer);
-            const drawnGeoJSON = layer.toGeoJSON();
-            const newlySelected = []; // Store GeoJSON features
-            let totalScore = 0, totalAreaSqMeters = 0;
-
-            if (layer_group) {
-                layer_group.eachLayer(function (featureLayer) {
-                    const feature = featureLayer.toGeoJSON();
-                    if (turf.booleanIntersects(drawnGeoJSON, feature)) {
-                        newlySelected.push(feature);
-                        featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
-                        totalScore += feature.properties.MCA_score || 0;
-                        totalAreaSqMeters += turf.area(feature);
-                    } else {
-                        featureLayer.setStyle(styleFeature(featureLayer.feature));
-                    }
-                });
-            }
-            selectedFeatures = newlySelected; // Update selectedFeatures with new selection
-            updateSelectionSummary(); // Update summary
-        });
-
-        // Handle deletion of drawn items
+        // Handle deletion of drawn items (from Leaflet.draw's edit toolbar)
         map.on(L.Draw.Event.DELETED, function (event) {
-            clearSelectionAndStats();
+            clearSelectionAndStats(); // Clear selection and reset grid style when drawn items are deleted
         });
 
 
         function clearSelectionAndStats() {
-            drawnItems.clearLayers();
+            drawnItems.clearLayers(); // Clears drawn rectangles/polygons
             selectedFeatures = [];
             lastSelectedLayer = null; // Clear last selected layer reference
             document.getElementById('selection-summary').innerHTML = '';
             controlBox.classList.remove('show-stats');
-            if(layer_group) layer_group.eachLayer(featureLayer=>featureLayer.setStyle(styleFeature(featureLayer.feature)));
+            // Reset style of all grid cells
+            if(layer_group) {
+                layer_group.eachLayer(featureLayer => {
+                    featureLayer.setStyle(styleFeature(featureLayer.feature));
+                });
+            }
         }
 
         // EXPORT FUNCTIES
