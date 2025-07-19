@@ -321,48 +321,6 @@ document.getElementById('toggle-buildings').addEventListener('change', function(
       }).addTo(map);
     });
 
-    const kadasterWMS = L.tileLayer.wms("https://geodata.nationaalgeoregister.nl/kadastralekaartv4/wms", {
-  layers: 'kadastralekaartv4:perceel',
-  format: 'image/png',
-  transparent: true,
-  attribution: "Kadaster / PDOK"
-}).addTo(map);
-
-    fetch('data/gemkaart24.json')
-  .then(res => res.json())
-  .then(geojson => {
-    const gemeenteLaag = L.geoJSON(geojson, {
-      style: {
-        color: 'blue',
-        weight: 2,
-        fillOpacity: 0
-      }
-    }).addTo(map);
-
-    map.fitBounds(gemeenteLaag.getBounds());
-
-    // Inverse wereldvlak maken met uitsparing voor gemeente Utrecht
-    const worldPolygon = [
-      [[-180, -90], [-180, 90], [180, 90], [180, -90], [-180, -90]]
-    ];
-
-    // Uitsparing maken voor Utrecht (elk polygon-onderdeel wordt als gat toegevoegd)
-    const holes = geojson.features.flatMap(feature => {
-      return feature.geometry.type === "Polygon"
-        ? [feature.geometry.coordinates[0]]
-        : feature.geometry.coordinates.map(poly => poly[0]);
-    });
-
-    const maskPolygon = L.polygon([...worldPolygon, ...holes], {
-      stroke: false,
-      fillColor: 'white',
-      fillOpacity: 0.9,
-      interactive: false
-    }).addTo(map);
-  });
-
-    
-
     // SLIDERS EN BUTTONS
     function updatePercentDisplay(idRange, idPercent) {
       const range = document.getElementById(idRange);
