@@ -213,6 +213,8 @@
     </button>
     <button id="reset-btn" type="button">Reset weighting to default</button>
     
+<button id="ai-suggest-btn">🤖 AI Suggests Optimal Area</button>
+    
     <div class="control-row">
       <label class="inline-checkbox">
         <input type="checkbox" id="toggle-grid" class="layer-toggle" title="Show grid layer" checked />
@@ -885,6 +887,38 @@ document.querySelectorAll('.locked-label').forEach(label => {
     e.preventDefault();
     alert("This feature is locked. Please contact the administrator to unlock.");
   });
+});
+
+    document.getElementById("ai-suggest-btn").addEventListener("click", function () {
+  let highestScore = -Infinity;
+  let bestCells = [];
+
+  gridLayer.eachLayer(function (layer) {
+    const score = layer.feature.properties.suitability_score;
+
+    if (score > highestScore) {
+      highestScore = score;
+      bestCells = [layer];
+    } else if (score === highestScore) {
+      bestCells.push(layer);
+    }
+  });
+
+  // Highlight best cell(s)
+  bestCells.forEach(cell => {
+    cell.setStyle({
+      color: "#ff0000",
+      weight: 3,
+      fillColor: "#ff6666",
+      fillOpacity: 0.6
+    });
+    cell.bringToFront();
+  });
+
+  // Optional: Zoom to first cell
+  if (bestCells.length > 0) {
+    map.fitBounds(bestCells[0].getBounds());
+  }
 });
     
   </script>
