@@ -42,7 +42,7 @@
     .inline-checkbox input[type="checkbox"] { margin: 0; }
     .slider-label { display: flex; align-items: center; gap: 6px; }
     #reset-btn, #update-btn {
-      margin-top: 6px; width: 100%; padding: 7px; font-size: 12px;
+      margin-top: 4px; width: 100%; padding: 7px; font-size: 12px;
       background: #2C3E83; color: white; border: none; border-radius: 4px; cursor: pointer;
     }
     #info-icon {
@@ -63,7 +63,7 @@
       padding: 10px 15px; border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
       z-index: 1150; font-size: 13px; cursor: pointer; user-select: none; display: none; width: 160px; text-align: center;
     }
-    #close-menu-btn { margin-top: 8px; }
+    #close-menu-btn { margin-top: 4px; }
     .legend {
       position: absolute; bottom: 10px; left: 5px; padding: 8px 12px; background: rgba(255,255,255,0.75);
       font-size: 12px; border-radius: 6px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
@@ -206,16 +206,15 @@
       <input type="range" min="0" max="1" step="0.01" id="weight-pop" value="0.50" />
       <span id="percent-pop">50%</span>
     </div>
+     <button id="reset-btn" type="button">Reset weighting to default</button>
     <button id="update-btn" type="button" style="position:relative;">
       Update suitability index
       <div id="info-icon" style="display:inline-block;">i</div>
       <div id="info-text">The suitability index is the result of factors in which weighting are applied. Normalisation sums up to 100%</div>
     </button>
-    <button id="ai-suggest-btn" type="button" style="margin-top: 6px; width: 100%; padding: 7px; font-size: 12px; background: #2C3E83; color: white; border: none; border-radius: 4px; cursor: pointer;">
+    <button id="ai-suggest-btn" type="button" style="margin-top: 4px; width: 100%; padding: 7px; font-size: 12px; background: #2C3E83; color: white; border: none; border-radius: 4px; cursor: pointer;">
   🤖 AI Suggests Optimal Area
 </button>
-    <button id="reset-btn" type="button">Reset weighting to default</button>
-    
     
     <div class="control-row">
       <label class="inline-checkbox">
