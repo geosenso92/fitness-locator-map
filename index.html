@@ -531,8 +531,8 @@ map.on(L.Draw.Event.CREATED, function (event) {
       }
     });
 
-  } else {
-    // Polygon or rectangle
+  } else if (layer instanceof L.Rectangle || layer instanceof L.Polygon) {
+    // Rectangle or polygon
     const drawnGeoJSON = layer.toGeoJSON();
 
     layer_group.eachLayer(function(featureLayer) {
@@ -563,14 +563,13 @@ map.on(L.Draw.Event.CREATED, function (event) {
       </div>
     `;
 
-    // Calculate popup position:
     let popupLatLng;
     if (layer.getBounds) {
       popupLatLng = layer.getBounds().getCenter();
     } else if (layer.getLatLng) {
       popupLatLng = layer.getLatLng();
     } else {
-      popupLatLng = map.getCenter(); // fallback
+      popupLatLng = map.getCenter();
     }
 
     const popup = L.popup()
