@@ -319,17 +319,22 @@ document.getElementById('transparency-slider').addEventListener('input', functio
   currentTransparency = parseFloat(e.target.value);
   document.getElementById('percent-transparency').textContent = Math.round(currentTransparency * 100) + '%';
 
-  if (layer_group) {
-    layer_group.setStyle(function(feature) {
-      return {
-        fillColor: getColor(feature.properties.MCA_score || 0),
-        weight: 0.3,
-        color: '#555',
-        fillOpacity: currentTransparency
-      };
+ layer_group = L.geoJson(yourGeojsonData, {
+  style: function(feature) {
+    return {
+      fillColor: getColor(feature.properties.MCA_score || 0),
+      weight: 0.3,
+      color: '#555',
+      fillOpacity: currentTransparency
+    };
+  },
+  onEachFeature: function(feature, layer) {
+    layer.on('click', function(e) {
+      const isMulti = e.originalEvent.ctrlKey || e.originalEvent.shiftKey;
+      handleGridClick(feature, layer, isMulti);
     });
   }
-});
+}).addTo(map);
   
     // OVERLAY/BASELAYER CONTROL
     const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'Tiles © Esri'});
@@ -475,7 +480,7 @@ const drawControl = new L.Control.Draw({
     rectangle: false,
     polyline: false,
     circle: false,
-    marker: true,
+    marker: false,
     circlemarker: false
   }
 });
