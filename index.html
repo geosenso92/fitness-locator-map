@@ -464,8 +464,8 @@ deleteBtn.onAdd = function () {
   return btn;
 };
 deleteBtn.addTo(map);
-    
- map.on(L.Draw.Event.CREATED, function (event) {
+  
+map.on(L.Draw.Event.CREATED, function (event) {
   const layer = event.layer;
   drawnItems.clearLayers();
   drawnItems.addLayer(layer);
@@ -473,30 +473,55 @@ deleteBtn.addTo(map);
   let popupContent = "";
 
   if (event.layerType === "marker") {
-    const latlng = layer.getLatLng();
-    popupContent = `<b>Marker Selected</b><br>Lat: ${latlng.lat.toFixed(5)}<br>Lng: ${latlng.lng.toFixed(5)}`;
-
-    // Apply smaller icon to marker
+    // Don't show popup or lat/lng info for marker
+    // You can skip popup here entirely or just leave popupContent empty
+    popupContent = ""; // or simply skip binding popup
+    
+    // Optionally, still apply smaller icon if you want
     const smallIcon = L.icon({
       iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
       iconSize: [20, 30], // smaller
       iconAnchor: [10, 30]
     });
     layer.setIcon(smallIcon);
+
+    // Also clear stats since marker doesn't count as grid selection
+    document.getElementById('selection-summary').innerHTML = '';
+    controlBox.classList.remove('show-stats');
   } else if (event.layerType === "rectangle" || event.layerType === "polygon") {
     const latlngs = layer.getLatLngs()[0];
-    const area = L.GeometryUtil.geodesicArea(latlngs);
-    popupContent = `<b>Area Selected</b><br>Approx. ${area.toFixed(2)} m²`;
-  }
+    const areaSqMeters = L.GeometryUtil.geodesicArea(latlngs);
+    const areaKm2 = areaSqMeters / 1e6;
 
-  layer.bindPopup(popupContent).openPopup();
+    // Get selected grid cells intersecting this area, for example:
+    const selected = getSelectedGridCells(layer); // You need to define this based on your data
+
+    // Calculate total suitability score & average
+    let totalScore = 0;
+    selected.forEach(cell => {
+      totalScore += cell.properties.mca_score || 0;
+    });
+    const avgScore = selected.length > 0 ? (totalScore / selected.length) : 0;
+
+    popupContent = `
+      <b>Area Selected</b><br>
+      Area: approx. ${areaKm2.toFixed(2)} km²<br>
+      Number of grid cells: ${selected.length}<br>
+      Avg. suitability score: ${avgScore.toFixed(2)}
+    `;
+
+    layer.bindPopup(popupContent).openPopup();
+
+    // Update summary box
+    if(selected.length){
+      document.getElementById('selection-summary').innerHTML =
+        `Selected: <b>${selected.length}</b> gridcells<br>` +
+        `Area: <b>${areaKm2.toFixed(2)}</b> km²<br>` +
+        `Avg. score: <b>${avgScore.toFixed(2)}</b>`;
+      controlBox.classList.add('show-stats');
+    }
+  }
 });
-      selectedFeatures = selected;
-      if(selected.length){
-        document.getElementById('selection-summary').innerHTML =
-          `Selected: <b>${selected.length}</b> gridcells<br>Area: <b>${(totalAreaSqMeters/1e6).toFixed(1)}</b> km²<br>Avg. score: <b>${(totalScore/selected.length).toFixed(2)}</b>`;
-        controlBox.classList.add('show-stats');
-      }
 
     function clearSelectionAndStats() {
       drawnItems.clearLayers();
