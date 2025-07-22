@@ -89,6 +89,18 @@
     }
     .leaflet-div-icon.leaflet-editing-icon { background: #fff; border: 1px solid #333; box-shadow: none; }
     .leaflet-div-icon.leaflet-draw-edit-move { background: #fff; border: 1px solid #555; box-shadow: none; }
+
+    .leaflet-draw-tooltip {
+  display: none !important;
+}
+
+    #stats-export-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* align everything left */
+  gap: 6px; /* optional spacing between elements */
+}
+    
     /* Hide export/selection UI unless needed */
     #stats-export-container, #export-csv-btn, #export-json-btn, #selection-summary { display: none; }
     .control-box.show-stats #stats-export-container,
@@ -128,7 +140,7 @@
       <div id="info-icon" style="display:inline-block;">i</div>
       <div id="info-text">The suitability index is the result of factors in which weighting are applied.</div>
     </button>
-    <button id="reset-btn" type="button">Reset weighting </button>
+    <button id="reset-btn" type="button">Reset weighting to default</button>
     <div class="control-row">
       <label class="inline-checkbox">
         <input type="checkbox" id="toggle-grid" class="layer-toggle" title="Show grid layer" checked />
