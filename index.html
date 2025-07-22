@@ -319,7 +319,7 @@ document.getElementById('transparency-slider').addEventListener('input', functio
   currentTransparency = parseFloat(e.target.value);
   document.getElementById('percent-transparency').textContent = Math.round(currentTransparency * 100) + '%';
 
- layer_group = L.geoJson(yourGeojsonData, {
+ layer_group = L.geoJson(data/Gebouwen.geojson, {
   style: function(feature) {
     return {
       fillColor: getColor(feature.properties.MCA_score || 0),
