@@ -361,6 +361,14 @@ document.getElementById('transparency-slider').addEventListener('input', functio
     updatePercentDisplay('weight-pop','percent-pop');
     updatePercentDisplay('transparency-slider','percent-transparency');
 
+    window.clearSelectionAndStats = function() {
+  drawnItems.clearLayers();
+  selectedFeatures = [];
+  document.getElementById('selection-summary').innerHTML = '';
+  controlBox.classList.remove('show-stats');
+  if(layer_group) layer_group.eachLayer(featureLayer => featureLayer.setStyle(styleFeature(featureLayer.feature)));
+};
+    
     function updateScores() {
       let w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
       let w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
