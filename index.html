@@ -432,38 +432,45 @@ document.getElementById('toggle-buildings').addEventListener('change', function(
 const drawControl = new L.Control.Draw({
   position: "bottomright",
   draw: {
+    marker: true,
     polygon: true,
     rectangle: true,
     polyline: false,
     circle: false,
-    marker: true,
     circlemarker: false
   }
 });
     map.addControl(drawControl);
 
-const deleteBtn = L.control({ position: 'bottomright' });
-deleteBtn.onAdd = function () {
-  const btn = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
-  btn.innerHTML = '🗑️';
-  btn.title = 'Delete selection';
-  btn.style.backgroundColor = 'white';
-  btn.style.width = '30px';
-  btn.style.height = '30px';
-  btn.style.lineHeight = '30px';
-  btn.style.textAlign = 'center';
-  btn.style.cursor = 'pointer';
-  btn.style.fontSize = '18px';
-  btn.style.boxShadow = '0 1px 4px rgba(0,0,0,0.4)';
-  btn.onclick = function () {
-    if (selectedFeatures.length === 0) return;
-    if (confirm('Are you sure you want to delete your selection?')) {
-      clearSelectionAndStats();
-    }
-  };
-  return btn;
-};
-deleteBtn.addTo(map);
+// Now add a custom control for the bin button, placed below drawControl
+const clearSelectionControl = L.Control.extend({
+  options: {
+    position: 'bottomright'  // same position as drawControl
+  },
+  onAdd: function(map) {
+    const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+    
+    container.style.backgroundColor = 'white';
+    container.style.width = '34px';
+    container.style.height = '34px';
+    container.style.marginTop = '5px'; // small gap below draw control
+    container.style.cursor = 'pointer';
+
+    // Use a bin emoji or fontawesome icon or an SVG for the bin
+    container.innerHTML = '🗑️';
+
+    container.title = "Clear Selection";
+
+    container.onclick = function(){
+      // Your clear selection logic here
+      alert("Clear selection clicked!");
+    };
+
+    return container;
+  }
+});
+
+map.addControl(new clearSelectionControl());
     
     map.on(L.Draw.Event.CREATED, function (event) {
       const layer = event.layer;
