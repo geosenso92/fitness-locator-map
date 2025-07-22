@@ -442,55 +442,55 @@ const drawControl = new L.Control.Draw({
 });
     map.addControl(drawControl);
 
-// Now add a custom control for the bin button, placed below drawControl
-const clearSelectionControl = L.Control.extend({
-  options: {
-    position: 'bottomright'  // same position as drawControl
-  },
-  onAdd: function(map) {
-    const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+const deleteBtn = L.control({ position: 'bottomright' });
+deleteBtn.onAdd = function () {
+  const btn = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+  btn.innerHTML = '🗑️';
+  btn.title = 'Delete selection';
+  btn.style.backgroundColor = 'white';
+  btn.style.width = '30px';
+  btn.style.height = '30px';
+  btn.style.lineHeight = '30px';
+  btn.style.textAlign = 'center';
+  btn.style.cursor = 'pointer';
+  btn.style.fontSize = '18px';
+  btn.style.boxShadow = '0 1px 4px rgba(0,0,0,0.4)';
+  btn.onclick = function () {
+    if (selectedFeatures.length === 0) return;
+    if (confirm('Are you sure you want to delete your selection?')) {
+      clearSelectionAndStats();
+    }
+  };
+  return btn;
+};
+deleteBtn.addTo(map);
     
-    container.style.backgroundColor = 'white';
-    container.style.width = '34px';
-    container.style.height = '34px';
-    container.style.marginTop = '5px'; // small gap below draw control
-    container.style.cursor = 'pointer';
+ map.on(L.Draw.Event.CREATED, function (event) {
+  const layer = event.layer;
+  drawnItems.clearLayers();
+  drawnItems.addLayer(layer);
 
-    // Use a bin emoji or fontawesome icon or an SVG for the bin
-    container.innerHTML = '🗑️';
+  let popupContent = "";
 
-    container.title = "Clear Selection";
+  if (event.layerType === "marker") {
+    const latlng = layer.getLatLng();
+    popupContent = `<b>Marker Selected</b><br>Lat: ${latlng.lat.toFixed(5)}<br>Lng: ${latlng.lng.toFixed(5)}`;
 
-    container.onclick = function(){
-      // Your clear selection logic here
-      alert("Clear selection clicked!");
-    };
-
-    return container;
+    // Apply smaller icon to marker
+    const smallIcon = L.icon({
+      iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+      iconSize: [20, 30], // smaller
+      iconAnchor: [10, 30]
+    });
+    layer.setIcon(smallIcon);
+  } else if (event.layerType === "rectangle" || event.layerType === "polygon") {
+    const latlngs = layer.getLatLngs()[0];
+    const area = L.GeometryUtil.geodesicArea(latlngs);
+    popupContent = `<b>Area Selected</b><br>Approx. ${area.toFixed(2)} m²`;
   }
-});
 
-map.addControl(new clearSelectionControl());
-    
-    map.on(L.Draw.Event.CREATED, function (event) {
-      const layer = event.layer;
-      drawnItems.clearLayers();
-      drawnItems.addLayer(layer);
-      const drawnGeoJSON = layer.toGeoJSON();
-      const selected = [];
-      let totalScore = 0, totalAreaSqMeters = 0;
-      if (layer_group) {
-        layer_group.eachLayer(function (featureLayer) {
-          const feature = featureLayer.toGeoJSON();
-          if (turf.booleanIntersects(drawnGeoJSON, feature)) {
-            selected.push(feature);
-            featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
-            totalScore += feature.properties.MCA_score || 0;
-            totalAreaSqMeters += turf.area(feature);
-          } else {
-            featureLayer.setStyle(styleFeature(featureLayer.feature));
-          }
-        });
+  layer.bindPopup(popupContent).openPopup();
+});
       }
       selectedFeatures = selected;
       if(selected.length){
