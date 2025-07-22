@@ -213,6 +213,8 @@
           <input type="checkbox" id="toggle-buildings" class="layer-toggle" title="Show buildings layer" />
           Buildings layer
         </label>
+
+        <label><input type="checkbox" id="toggle-zoning"> Toon bestemmingsplannen</label>
         
       </div>
     </div>
@@ -332,6 +334,25 @@
           }
         });
 
+        // WMS Bestemmingsplan
+        fetch('https://geodata.utrecht.nl/geoserver/UtrechtOpen/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=UtrechtOpen:Bestemmingsplan&outputFormat=application/json')
+  .then(res => res.json())
+  .then(data => {
+    const bestemmingsplanLayer = L.geoJSON(data, {
+      style: {
+        color: '#ff7800',
+        weight: 1,
+        fillOpacity: 0.3
+      },
+      onEachFeature: function (feature, layer) {
+        const naam = feature.properties.naam || 'Onbekend bestemmingsplan';
+        layer.bindPopup(`<strong>Bestemming:</strong> ${naam}`);
+      }
+    });
+    bestemmingsplanLayer.addTo(map);
+  })
+  .catch(err => console.error('Fout bij laden bestemmingsplan:', err));
+        
         // laad de GeoJSON data
         fetch('data/Gebouwen.geojson')
           .then(response => response.json())
@@ -510,6 +531,32 @@
       else if(layer_group && map.hasLayer(layer_group)) map.removeLayer(layer_group);
     }
 
+let bestemmingsplanLayer;
+
+document.getElementById('toggle-zoning').addEventListener('change', function (e) {
+  if (e.target.checked) {
+    if (!bestemmingsplanLayer) {
+      fetch('https://geodata.utrecht.nl/geoserver/UtrechtOpen/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=UtrechtOpen:Bestemmingsplan&outputFormat=application/json')
+        .then(res => res.json())
+        .then(data => {
+          bestemmingsplanLayer = L.geoJSON(data, {
+            style: { color: '#ff7800', weight: 1, fillOpacity: 0.3 },
+            onEachFeature: function (feature, layer) {
+              const naam = feature.properties.naam || 'Onbekend bestemmingsplan';
+              layer.bindPopup(`<strong>Bestemming:</strong> ${naam}`);
+            }
+          }).addTo(map);
+        });
+    } else {
+      bestemmingsplanLayer.addTo(map);
+    }
+  } else {
+    if (bestemmingsplanLayer) {
+      map.removeLayer(bestemmingsplanLayer);
+    }
+  }
+});
+    
     // CONTROL BOX MENU
     const controlBox = document.getElementById('control-box');
     const toggleMenuBtn = document.getElementById('toggle-menu-btn');
