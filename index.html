@@ -505,53 +505,63 @@ deleteBtn.onAdd = function () {
 };
 deleteBtn.addTo(map);
 
-map.on(L.Draw.Event.CREATED, function (event) {
+map.on(L.Draw.Event.CREATED, function(event) {
   const layer = event.layer;
-  drawnItems.clearLayers();
+  const layerType = event.layerType; // polygon, rectangle, marker, etc.
+
+  // For multiple selections with Ctrl/Shift, don't clear layers
+  const multiSelect = event.originalEvent && (event.originalEvent.ctrlKey || event.originalEvent.shiftKey);
+  if (!multiSelect) {
+    drawnItems.clearLayers();
+  }
   drawnItems.addLayer(layer);
 
-  selectedFeatures = [];
+  // Prepare GeoJSON for intersection
+  let drawnGeoJSON;
+  if (layerType === 'marker') {
+    // For a single point (marker), just take its coordinates as a Point
+    drawnGeoJSON = layer.toGeoJSON();
+  } else {
+    // For polygon/rectangle: convert shape to GeoJSON Polygon
+    drawnGeoJSON = layer.toGeoJSON();
+  }
+
+  const selected = [];
   let totalScore = 0, totalAreaSqMeters = 0;
 
-  if (!layer_group) return;
-
-  if (layer instanceof L.Marker) {
-    // Single select point
-    const point = layer.getLatLng();
-
+  if (layer_group) {
     layer_group.eachLayer(function(featureLayer) {
       const feature = featureLayer.toGeoJSON();
-      if (turf.booleanPointInPolygon(turf.point([point.lng, point.lat]), feature)) {
-        selectedFeatures.push(feature);
-        featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
-        totalScore += feature.properties.MCA_score || 0;
-        totalAreaSqMeters += turf.area(feature);
+      // For marker (point), check if point is inside the feature polygon
+      if (layerType === 'marker') {
+        if (turf.booleanPointInPolygon(drawnGeoJSON, feature)) {
+          selected.push(feature);
+          featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
+          totalScore += feature.properties.MCA_score || 0;
+          totalAreaSqMeters += turf.area(feature);
+        } else {
+          featureLayer.setStyle(styleFeature(featureLayer.feature));
+        }
       } else {
-        featureLayer.setStyle(styleFeature(featureLayer.feature));
-      }
-    });
-
-  } else if (layer instanceof L.Rectangle || layer instanceof L.Polygon) {
-    // Rectangle or polygon
-    const drawnGeoJSON = layer.toGeoJSON();
-
-    layer_group.eachLayer(function(featureLayer) {
-      const feature = featureLayer.toGeoJSON();
-      if (turf.booleanIntersects(drawnGeoJSON, feature)) {
-        selectedFeatures.push(feature);
-        featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
-        totalScore += feature.properties.MCA_score || 0;
-        totalAreaSqMeters += turf.area(feature);
-      } else {
-        featureLayer.setStyle(styleFeature(featureLayer.feature));
+        // For polygon or rectangle: check polygon intersection
+        if (turf.booleanIntersects(drawnGeoJSON, feature)) {
+          selected.push(feature);
+          featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
+          totalScore += feature.properties.MCA_score || 0;
+          totalAreaSqMeters += turf.area(feature);
+        } else {
+          featureLayer.setStyle(styleFeature(featureLayer.feature));
+        }
       }
     });
   }
 
-  if (selectedFeatures.length) {
-    const avgScore = (totalScore / selectedFeatures.length).toFixed(2);
+  selectedFeatures = selected;
+
+  if (selected.length) {
+    const avgScore = (totalScore / selected.length).toFixed(2);
     const areaKm2 = (totalAreaSqMeters / 1e6).toFixed(1);
-    const count = selectedFeatures.length;
+    const count = selected.length;
 
     const popupContent = `
       <div id="popup-stats" style="font-family: Arial; font-size: 14px;">
@@ -564,12 +574,10 @@ map.on(L.Draw.Event.CREATED, function (event) {
     `;
 
     let popupLatLng;
-    if (layer.getBounds) {
-      popupLatLng = layer.getBounds().getCenter();
-    } else if (layer.getLatLng) {
+    if (layerType === 'marker') {
       popupLatLng = layer.getLatLng();
     } else {
-      popupLatLng = map.getCenter();
+      popupLatLng = layer.getBounds().getCenter();
     }
 
     const popup = L.popup()
