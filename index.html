@@ -437,94 +437,92 @@ document.getElementById('transparency-slider').addEventListener('input', functio
 
     // TEKENEN EN SELECTIE
     const drawnItems = new L.FeatureGroup().addTo(map);
-    let selectedFeatures = [];
-    // Patch Leaflet.Draw area display (km² ipv ha)
-    var LDraw = window.L.Draw ? window.L.Draw : window.L.draw;
-    if (LDraw && LDraw.Tooltip && LDraw.Tooltip.prototype) {
-      LDraw.Tooltip.prototype._formatArea = function(area) {
-        var km2 = area / 1e6;
-        return km2.toLocaleString('nl-NL', {maximumFractionDigits: 2}) + ' km²';
-      }
-    }
+let selectedFeatures = [];
+
+// Patch Leaflet.Draw area display (km² ipv ha)
+var LDraw = window.L.Draw ? window.L.Draw : window.L.draw;
+if (LDraw && LDraw.Tooltip && LDraw.Tooltip.prototype) {
+  LDraw.Tooltip.prototype._formatArea = function(area) {
+    var km2 = area / 1e6;
+    return km2.toLocaleString('nl-NL', {maximumFractionDigits: 2}) + ' km²';
+  }
+}
+
 const drawControl = new L.Control.Draw({
   position: "bottomright",
   draw: {
-    marker: true,
     polygon: true,
     rectangle: true,
     polyline: false,
     circle: false,
+    marker: true,
     circlemarker: false
   }
 });
-    map.addControl(drawControl);
+map.addControl(drawControl);
 
-// Now add a custom control for the bin button, placed below drawControl
-const clearSelectionControl = L.Control.extend({
-  options: {
-    position: 'bottomright'  // same position as drawControl
-  },
-  onAdd: function(map) {
-    const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
-    
-    container.style.backgroundColor = 'white';
-    container.style.width = '34px';
-    container.style.height = '34px';
-    container.style.marginTop = '5px'; // small gap below draw control
-    container.style.cursor = 'pointer';
+// OLD BIN BUTTON (DELETE SELECTION)
+const deleteBtn = L.control({ position: 'bottomright' });
+deleteBtn.onAdd = function () {
+  const btn = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+  btn.innerHTML = '🗑️';
+  btn.title = 'Delete selection';
+  btn.style.backgroundColor = 'white';
+  btn.style.width = '30px';
+  btn.style.height = '30px';
+  btn.style.lineHeight = '30px';
+  btn.style.textAlign = 'center';
+  btn.style.cursor = 'pointer';
+  btn.style.fontSize = '18px';
+  btn.style.boxShadow = '0 1px 4px rgba(0,0,0,0.4)';
+  btn.onclick = function () {
+    if (selectedFeatures.length === 0) return;
+    if (confirm('Are you sure you want to delete your selection?')) {
+      clearSelectionAndStats();
+    }
+  };
+  return btn;
+};
+deleteBtn.addTo(map);
 
-    // Use a bin emoji or fontawesome icon or an SVG for the bin
-    container.innerHTML = '🗑️';
+map.on(L.Draw.Event.CREATED, function (event) {
+  const layer = event.layer;
+  drawnItems.clearLayers();
+  drawnItems.addLayer(layer);
 
-    container.title = "Clear Selection";
+  const drawnGeoJSON = layer.toGeoJSON();
+  const selected = [];
+  let totalScore = 0, totalAreaSqMeters = 0;
 
-    container.onclick = function(){
-      // Your clear selection logic here
-      alert("Clear selection clicked!");
-    };
-
-    return container;
+  if (layer_group) {
+    layer_group.eachLayer(function (featureLayer) {
+      const feature = featureLayer.toGeoJSON();
+      if (turf.booleanIntersects(drawnGeoJSON, feature)) {
+        selected.push(feature);
+        featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
+        totalScore += feature.properties.MCA_score || 0;
+        totalAreaSqMeters += turf.area(feature);
+      } else {
+        featureLayer.setStyle(styleFeature(featureLayer.feature));
+      }
+    });
+  }
+  selectedFeatures = selected;
+  if(selected.length){
+    document.getElementById('selection-summary').innerHTML =
+      `Selected: <b>${selected.length}</b> gridcells<br>Area: <b>${(totalAreaSqMeters/1e6).toFixed(1)}</b> km²<br>Avg. score: <b>${(totalScore/selected.length).toFixed(2)}</b>`;
+    controlBox.classList.add('show-stats');
   }
 });
 
-map.addControl(new clearSelectionControl());
+function clearSelectionAndStats() {
+  drawnItems.clearLayers();
+  selectedFeatures = [];
+  document.getElementById('selection-summary').innerHTML = '';
+  controlBox.classList.remove('show-stats');
+  if(layer_group) layer_group.eachLayer(featureLayer => featureLayer.setStyle(styleFeature(featureLayer.feature)));
+}
     
-    map.on(L.Draw.Event.CREATED, function (event) {
-      const layer = event.layer;
-      drawnItems.clearLayers();
-      drawnItems.addLayer(layer);
-      const drawnGeoJSON = layer.toGeoJSON();
-      const selected = [];
-      let totalScore = 0, totalAreaSqMeters = 0;
-      if (layer_group) {
-        layer_group.eachLayer(function (featureLayer) {
-          const feature = featureLayer.toGeoJSON();
-          if (turf.booleanIntersects(drawnGeoJSON, feature)) {
-            selected.push(feature);
-            featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
-            totalScore += feature.properties.MCA_score || 0;
-            totalAreaSqMeters += turf.area(feature);
-          } else {
-            featureLayer.setStyle(styleFeature(featureLayer.feature));
-          }
-        });
-      }
-      selectedFeatures = selected;
-      if(selected.length){
-        document.getElementById('selection-summary').innerHTML =
-          `Selected: <b>${selected.length}</b> gridcells<br>Area: <b>${(totalAreaSqMeters/1e6).toFixed(1)}</b> km²<br>Avg. score: <b>${(totalScore/selected.length).toFixed(2)}</b>`;
-        controlBox.classList.add('show-stats');
-      }
-    });
-
-    function clearSelectionAndStats() {
-      drawnItems.clearLayers();
-      selectedFeatures = [];
-      document.getElementById('selection-summary').innerHTML = '';
-      controlBox.classList.remove('show-stats');
-      if(layer_group) layer_group.eachLayer(featureLayer=>featureLayer.setStyle(styleFeature(featureLayer.feature)));
-    }
-
     // EXPORT FUNCTIES
     function exportSelectedAsCSV(selected) {
       if (!selected.length) return;
