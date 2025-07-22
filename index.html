@@ -319,6 +319,18 @@ document.getElementById('transparency-slider').addEventListener('input', functio
   currentTransparency = parseFloat(e.target.value);
   document.getElementById('percent-transparency').textContent = Math.round(currentTransparency * 100) + '%';
 
+  if (layer_group) {
+    layer_group.setStyle(function(feature) {
+      return {
+        fillColor: getColor(feature.properties.MCA_score || 0),
+        weight: 0.3,
+        color: '#555',
+        fillOpacity: currentTransparency
+      };
+    });
+  }
+});
+  
     // OVERLAY/BASELAYER CONTROL
     const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'Tiles © Esri'});
     L.control.layers(null, { "Satellite": satelliteLayer }, { position:'topright' }).addTo(map);
@@ -463,7 +475,7 @@ const drawControl = new L.Control.Draw({
     rectangle: false,
     polyline: false,
     circle: false,
-    marker: false,
+    marker: true,
     circlemarker: false
   }
 });
