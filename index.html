@@ -38,7 +38,7 @@
     .control-box-title { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #2C3E83; }
     .control-row { display: flex; align-items: center; gap: 8px; }
     .layer-toggle { cursor: pointer; width: 12px; height: 12px; margin-left: 8px; }
-    .inline-checkbox { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .inline-checkbox { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; } /* REMOVED FONT-WEIGHT: 600 */
     .inline-checkbox input[type="checkbox"] { margin: 0; }
     .slider-label { display: flex; align-items: center; gap: 6px; }
     #reset-btn, #update-btn {
@@ -202,35 +202,42 @@
       <div id="info-text">The suitability index is the result of factors in which weighting are applied. Normalisation sums up to 100%</div>
     </button>
     <button id="reset-btn" type="button">Reset weighting to default</button>
+    
     <div class="control-row">
       <label class="inline-checkbox">
         <input type="checkbox" id="toggle-grid" class="layer-toggle" title="Show grid layer" checked />
         Suitability layer
       </label>
-      
-      <div class="control-row">
-        <label class="inline-checkbox">
-          <input type="checkbox" id="toggle-buildings" class="layer-toggle" title="Show buildings layer" />
-          Buildings layer
-        </label>
-
-       <label><input type="checkbox" id="toggle-zoning">Show zoning layer</label>
-        
-      </div>
     </div>
+    
+    <div class="control-row">
+      <label class="inline-checkbox">
+        <input type="checkbox" id="toggle-buildings" class="layer-toggle" title="Show buildings layer" />
+        Buildings layer
+      </label>
+    </div>
+
+    <div class="control-row">
+      <label class="inline-checkbox">
+        <input type="checkbox" id="toggle-zoning" class="layer-toggle" title="Show zoning layer" />
+        Zoning layer
+      </label>
+    </div>
+
     <label id="transparency-label" for="transparency-slider">Grid transparency
       <input type="range" min="0" max="1" step="0.01" id="transparency-slider" value="0.5" />
       <span id="percent-transparency">50%</span>
     </label>
 
- <div class="search-container">
-  <label for="address-search-input">Search address (within Utrecht):</label>
-  <div class="search-input-group">
-    <input type="text" id="address-search-input" placeholder="e.g., Domplein 9">
-    <button id="search-address-btn">Search</button>
-    <button id="clear-search-btn" style="background: #ccc; color: #333;">Clear Search</button> </div>
-  <div id="search-results"></div>
-</div>
+    <div class="search-container">
+      <label for="address-search-input">Search address (within Utrecht):</label>
+      <div class="search-input-group">
+        <input type="text" id="address-search-input" placeholder="e.g., Domplein 9">
+        <button id="search-address-btn">Search</button>
+        <button id="clear-search-btn" style="background: #ccc; color: #333;">Clear Search</button>
+      </div>
+      <div id="search-results"></div>
+    </div>
 
     <div id="stats-export-container">
       <div id="selection-summary"></div>
@@ -334,25 +341,6 @@
           }
         });
 
-        // WMS Bestemmingsplan
-        fetch('https://geodata.utrecht.nl/geoserver/UtrechtOpen/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=UtrechtOpen:Bestemmingsplan&outputFormat=application/json')
-  .then(res => res.json())
-  .then(data => {
-    const bestemmingsplanLayer = L.geoJSON(data, {
-      style: {
-        color: '#ff7800',
-        weight: 1,
-        fillOpacity: 0.3
-      },
-      onEachFeature: function (feature, layer) {
-        const naam = feature.properties.naam || 'Onbekend bestemmingsplan';
-        layer.bindPopup(`<strong>Bestemming:</strong> ${naam}`);
-      }
-    });
-    bestemmingsplanLayer.addTo(map);
-  })
-  .catch(err => console.error('Fout bij laden bestemmingsplan:', err));
-        
         // laad de GeoJSON data
         fetch('data/Gebouwen.geojson')
           .then(response => response.json())
@@ -377,6 +365,61 @@
         }
       }
     });
+
+    // NEW: Zoning Layer
+    let zoningLayer = null;
+
+    function loadZoningLayer() {
+        if (!zoningLayer) {
+            zoningLayer = L.geoJSON(null, {
+                style: function(feature) {
+                    // Example styling based on a 'type' property in your GeoJSON
+                    // Adjust colors and properties as needed for your specific zoning data
+                    switch (feature.properties.Type) { // Assuming a 'Type' property for different zoning areas
+                        case 'Residential': return { color: '#ff7800', weight: 1, opacity: 0.7, fillOpacity: 0.3, fillColor: '#ffeda0' };
+                        case 'Commercial': return { color: '#007bff', weight: 1, opacity: 0.7, fillOpacity: 0.3, fillColor: '#a0e4ff' };
+                        case 'Industrial': return { color: '#6a0dad', weight: 1, opacity: 0.7, fillOpacity: 0.3, fillColor: '#c4a0ff' };
+                        default: return { color: '#555555', weight: 1, opacity: 0.7, fillOpacity: 0.2, fillColor: '#cccccc' };
+                    }
+                },
+                onEachFeature: function(feature, layer) {
+                    // Adjust popup content based on your zoning data properties
+                    if (feature.properties && feature.properties.Type) {
+                        layer.bindPopup(`<strong>Zoning Type:</strong> ${feature.properties.Type}`);
+                    }
+                }
+            });
+
+            // Load the GeoJSON data for zoning
+            // REPLACE 'data/Zoning.geojson' with the actual path to your zoning GeoJSON file
+            fetch('data/Zoning.geojson') 
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    zoningLayer.addData(data);
+                })
+                .catch(err => console.error('Error loading zoning layer:', err));
+        }
+    }
+
+    // Event listener for the new Zoning checkbox
+    document.getElementById('toggle-zoning').addEventListener('change', function(e) {
+        if (e.target.checked) {
+            loadZoningLayer(); // Load the layer if not already loaded
+            if (zoningLayer) {
+                zoningLayer.addTo(map); // Add to map
+            }
+        } else {
+            if (zoningLayer) {
+                map.removeLayer(zoningLayer); // Remove from map
+            }
+        }
+    });
+
 
     // GRID LAYER (SUITABILITY)
     let currentTransparency = 0.5;
@@ -531,32 +574,6 @@
       else if(layer_group && map.hasLayer(layer_group)) map.removeLayer(layer_group);
     }
 
-let bestemmingsplanLayer;
-
-document.getElementById('toggle-zoning').addEventListener('change', function (e) {
-  if (e.target.checked) {
-    if (!bestemmingsplanLayer) {
-      fetch('https://geodata.utrecht.nl/geoserver/UtrechtOpen/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=UtrechtOpen:Bestemmingsplan&outputFormat=application/json')
-        .then(res => res.json())
-        .then(data => {
-          bestemmingsplanLayer = L.geoJSON(data, {
-            style: { color: '#ff7800', weight: 1, fillOpacity: 0.3 },
-            onEachFeature: function (feature, layer) {
-              const naam = feature.properties.naam || 'Onbekend bestemmingsplan';
-              layer.bindPopup(`<strong>Bestemming:</strong> ${naam}`);
-            }
-          }).addTo(map);
-        });
-    } else {
-      bestemmingsplanLayer.addTo(map);
-    }
-  } else {
-    if (bestemmingsplanLayer) {
-      map.removeLayer(bestemmingsplanLayer);
-    }
-  }
-});
-    
     // CONTROL BOX MENU
     const controlBox = document.getElementById('control-box');
     const toggleMenuBtn = document.getElementById('toggle-menu-btn');
@@ -744,7 +761,6 @@ document.getElementById('toggle-zoning').addEventListener('change', function (e)
         performAddressSearch();
       }
     });
-
 
     const clearSearchBtn = document.getElementById('clear-search-btn'); // Get the new button
 
