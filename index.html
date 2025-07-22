@@ -510,15 +510,35 @@ map.on(L.Draw.Event.CREATED, function (event) {
   drawnItems.clearLayers();
   drawnItems.addLayer(layer);
 
-  const drawnGeoJSON = layer.toGeoJSON();
-  const selected = [];
+  selectedFeatures = [];
   let totalScore = 0, totalAreaSqMeters = 0;
 
-  if (layer_group) {
-    layer_group.eachLayer(function (featureLayer) {
+  if (!layer_group) return;
+
+  if (layer instanceof L.Marker) {
+    // Single select point
+    const point = layer.getLatLng();
+
+    layer_group.eachLayer(function(featureLayer) {
+      const feature = featureLayer.toGeoJSON();
+      if (turf.booleanPointInPolygon(turf.point([point.lng, point.lat]), feature)) {
+        selectedFeatures.push(feature);
+        featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
+        totalScore += feature.properties.MCA_score || 0;
+        totalAreaSqMeters += turf.area(feature);
+      } else {
+        featureLayer.setStyle(styleFeature(featureLayer.feature));
+      }
+    });
+
+  } else {
+    // Polygon or rectangle
+    const drawnGeoJSON = layer.toGeoJSON();
+
+    layer_group.eachLayer(function(featureLayer) {
       const feature = featureLayer.toGeoJSON();
       if (turf.booleanIntersects(drawnGeoJSON, feature)) {
-        selected.push(feature);
+        selectedFeatures.push(feature);
         featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
         totalScore += feature.properties.MCA_score || 0;
         totalAreaSqMeters += turf.area(feature);
@@ -527,12 +547,11 @@ map.on(L.Draw.Event.CREATED, function (event) {
       }
     });
   }
-  selectedFeatures = selected;
 
-  if(selected.length){
-    const avgScore = (totalScore / selected.length).toFixed(2);
+  if (selectedFeatures.length) {
+    const avgScore = (totalScore / selectedFeatures.length).toFixed(2);
     const areaKm2 = (totalAreaSqMeters / 1e6).toFixed(1);
-    const count = selected.length;
+    const count = selectedFeatures.length;
 
     const popupContent = `
       <div id="popup-stats" style="font-family: Arial; font-size: 14px;">
@@ -544,8 +563,18 @@ map.on(L.Draw.Event.CREATED, function (event) {
       </div>
     `;
 
+    // Calculate popup position:
+    let popupLatLng;
+    if (layer.getBounds) {
+      popupLatLng = layer.getBounds().getCenter();
+    } else if (layer.getLatLng) {
+      popupLatLng = layer.getLatLng();
+    } else {
+      popupLatLng = map.getCenter(); // fallback
+    }
+
     const popup = L.popup()
-      .setLatLng(layer.getBounds().getCenter())
+      .setLatLng(popupLatLng)
       .setContent(popupContent)
       .openOn(map);
 
