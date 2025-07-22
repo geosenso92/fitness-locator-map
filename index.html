@@ -520,20 +520,37 @@ map.on(L.Draw.Event.CREATED, function (event) {
     });
   }
   selectedFeatures = selected;
+
   if(selected.length){
-    document.getElementById('selection-summary').innerHTML =
-      `Selected: <b>${selected.length}</b> gridcells<br>Area: <b>${(totalAreaSqMeters/1e6).toFixed(1)}</b> km²<br>Avg. score: <b>${(totalScore/selected.length).toFixed(2)}</b>`;
-    controlBox.classList.add('show-stats');
+    const avgScore = (totalScore / selected.length).toFixed(2);
+    const areaKm2 = (totalAreaSqMeters / 1e6).toFixed(1);
+    const count = selected.length;
+
+    const popupContent = `
+      <div id="popup-stats" style="font-family: Arial; font-size: 14px;">
+        <strong>Selected: </strong> ${count} gridcells<br/>
+        <strong>Area: </strong> ${areaKm2} km²<br/>
+        <strong>Avg. score: </strong> ${avgScore}<br/><br/>
+        <button id="popup-export-json-btn" style="margin-right:5px;">Export GeoJSON</button>
+        <button id="popup-export-csv-btn">Export CSV</button>
+      </div>
+    `;
+
+    const popup = L.popup()
+      .setLatLng(layer.getBounds().getCenter())
+      .setContent(popupContent)
+      .openOn(map);
+
+    map.once('popupopen', function() {
+      document.getElementById('popup-export-json-btn').onclick = function() {
+        exportSelectedAsJSON(selectedFeatures);
+      };
+      document.getElementById('popup-export-csv-btn').onclick = function() {
+        exportSelectedAsCSV(selectedFeatures);
+      };
+    });
   }
 });
-
-function clearSelectionAndStats() {
-  drawnItems.clearLayers();
-  selectedFeatures = [];
-  document.getElementById('selection-summary').innerHTML = '';
-  controlBox.classList.remove('show-stats');
-  if(layer_group) layer_group.eachLayer(featureLayer => featureLayer.setStyle(styleFeature(featureLayer.feature)));
-}
     
     // EXPORT FUNCTIES
     function exportSelectedAsCSV(selected) {
