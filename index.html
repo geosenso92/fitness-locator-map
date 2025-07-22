@@ -514,7 +514,6 @@ deleteBtn.addTo(map);
           `Selected: <b>${selected.length}</b> gridcells<br>Area: <b>${(totalAreaSqMeters/1e6).toFixed(1)}</b> km²<br>Avg. score: <b>${(totalScore/selected.length).toFixed(2)}</b>`;
         controlBox.classList.add('show-stats');
       }
-    });
 
     function clearSelectionAndStats() {
       drawnItems.clearLayers();
