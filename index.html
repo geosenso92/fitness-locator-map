@@ -138,7 +138,7 @@
     <button id="update-btn" type="button" style="position:relative;">
       Update suitability index
       <div id="info-icon" style="display:inline-block;">i</div>
-      <div id="info-text">The suitability index is the result of factors in which weighting are applied.</div>
+      <div id="info-text">The suitability index is the result of factors in which weighting are applied. Normalisation sums up the total weightings to 100%</div>
     </button>
     <button id="reset-btn" type="button">Reset weighting to default</button>
     <div class="control-row">
@@ -509,19 +509,20 @@ map.on(L.Draw.Event.CREATED, function(event) {
   const layer = event.layer;
   const layerType = event.layerType;
 
-  const multiSelect = event.originalEvent && (event.originalEvent.ctrlKey || event.originalEvent.shiftKey);
-  if (!multiSelect) {
+  const isMultiSelect = event.originalEvent && (event.originalEvent.ctrlKey || event.originalEvent.shiftKey);
+  if (!isMultiSelect) {
     drawnItems.clearLayers();
-    if (layer_group) {
-      layer_group.eachLayer(l => l.setStyle(styleFeature(l.feature))); // reset styles
-    }
     selectedFeatures = [];
+
+    // Reset all styles
+    if (layer_group) {
+      layer_group.eachLayer(l => l.setStyle(styleFeature(l.feature)));
+    }
   }
 
   drawnItems.addLayer(layer);
 
   const drawnGeoJSON = layer.toGeoJSON();
-  const newSelected = [];
 
   if (layer_group) {
     layer_group.eachLayer(function(featureLayer) {
@@ -536,20 +537,20 @@ map.on(L.Draw.Event.CREATED, function(event) {
 
       if (intersects) {
         const id = feature.properties.id;
-        const alreadySelected = selectedFeatures.some(f => f.properties.id === id);
+        const index = selectedFeatures.findIndex(f => f.properties.id === id);
 
-        if (multiSelect) {
-          if (alreadySelected) {
-            // Unselect
-            selectedFeatures = selectedFeatures.filter(f => f.properties.id !== id);
+        if (isMultiSelect) {
+          if (index !== -1) {
+            // Already selected → unselect
+            selectedFeatures.splice(index, 1);
             featureLayer.setStyle(styleFeature(featureLayer.feature));
           } else {
-            // Add
+            // Not selected → add
             selectedFeatures.push(feature);
             featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
           }
         } else {
-          // Single click selection
+          // Single selection
           selectedFeatures = [feature];
           featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
         }
@@ -557,7 +558,7 @@ map.on(L.Draw.Event.CREATED, function(event) {
     });
   }
 
-  // Now recalculate stats from selectedFeatures
+  // Only show popup if something is selected
   if (selectedFeatures.length) {
     let totalScore = 0, totalAreaSqMeters = 0;
     selectedFeatures.forEach(f => {
@@ -571,9 +572,9 @@ map.on(L.Draw.Event.CREATED, function(event) {
 
     const popupContent = `
       <div id="popup-stats" style="font-family: Arial; font-size: 14px;">
-        <strong>Selected: </strong> ${count} gridcells<br/>
-        <strong>Area: </strong> ${areaKm2} km²<br/>
-        <strong>Avg. score: </strong> ${avgScore}<br/><br/>
+        <strong>Selected:</strong> ${count} gridcells<br/>
+        <strong>Area:</strong> ${areaKm2} km²<br/>
+        <strong>Avg. score:</strong> ${avgScore}<br/><br/>
         <button id="popup-export-json-btn" style="margin-right:5px;">Export GeoJSON</button>
         <button id="popup-export-csv-btn">Export CSV</button>
       </div>
