@@ -889,12 +889,19 @@ document.querySelectorAll('.locked-label').forEach(label => {
   });
 });
 
-    document.getElementById("ai-suggest-btn").addEventListener("click", function () {
+document.getElementById("ai-suggest-btn").addEventListener("click", function () {
   let highestScore = -Infinity;
   let bestCells = [];
 
-  gridLayer.eachLayer(function (layer) {
-    const score = layer.feature.properties.suitability_score;
+  if (!layer_group) {
+    alert("Please load and calculate the suitability index first.");
+    return;
+  }
+
+  layer_group.eachLayer(function (layer) {
+    const score = layer.feature?.properties?.MCA_score;
+
+    if (typeof score !== "number") return;
 
     if (score > highestScore) {
       highestScore = score;
@@ -904,7 +911,14 @@ document.querySelectorAll('.locked-label').forEach(label => {
     }
   });
 
-  // Highlight best cell(s)
+  if (bestCells.length === 0) {
+    alert("No grid cells found with suitability scores.");
+    return;
+  }
+
+  // Optional: reset all grid styles first
+  layer_group.eachLayer(l => l.setStyle(styleFeature(l.feature)));
+
   bestCells.forEach(cell => {
     cell.setStyle({
       color: "#ff0000",
@@ -915,10 +929,8 @@ document.querySelectorAll('.locked-label').forEach(label => {
     cell.bringToFront();
   });
 
-  // Optional: Zoom to first cell
-  if (bestCells.length > 0) {
-    map.fitBounds(bestCells[0].getBounds());
-  }
+  // Optional: zoom to the first best cell
+  map.fitBounds(bestCells[0].getBounds());
 });
     
   </script>
