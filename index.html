@@ -101,6 +101,16 @@
       justify-content: flex-start; /* align everything left */
       gap: 6px; /* optional spacing between elements */
     }
+
+    .lock-icon {
+  color: gray;
+  margin-left: 5px;
+}
+
+.locked-label {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
     
     /* Hide export/selection UI unless needed */
     #stats-export-container, #export-csv-btn, #export-json-btn, #selection-summary { display: none; }
@@ -209,20 +219,20 @@
         Suitability grid
       </label>
     </div>
-    
-    <div class="control-row">
-      <label class="inline-checkbox">
-        <input type="checkbox" id="toggle-buildings" class="layer-toggle" title="Show buildings layer" />
-        Buildings
-      </label>
-    </div>
 
     <div class="control-row">
-      <label class="inline-checkbox">
-        <input type="checkbox" id="toggle-zoning" class="layer-toggle" title="Show zoning layer" />
-        Zoning
-      </label>
-    </div>
+  <label class="inline-checkbox locked-label" title="This feature is locked. Please contact to unlock this feature.">
+    <input type="checkbox" id="toggle-buildings" class="layer-toggle" disabled />
+    Buildings <span class="lock-icon">🔒</span>
+  </label>
+</div>
+
+<div class="control-row">
+  <label class="inline-checkbox locked-label" title="This feature is locked. Please contact to unlock this feature.">
+    <input type="checkbox" id="toggle-zoning" class="layer-toggle" disabled />
+    Zoning <span class="lock-icon">🔒</span>
+  </label>
+</div>
 
     <label id="transparency-label" for="transparency-slider">Grid transparency
       <input type="range" min="0" max="1" step="0.01" id="transparency-slider" value="0.5" />
@@ -870,6 +880,13 @@
       searchResultsDiv.prepend(header);
     }
 
+document.querySelectorAll('.locked-label').forEach(label => {
+  label.addEventListener('click', function (e) {
+    e.preventDefault();
+    alert("This feature is locked. Please contact the administrator to unlock.");
+  });
+});
+    
   </script>
 </body>
 </html>
