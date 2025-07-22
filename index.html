@@ -221,14 +221,14 @@
       <span id="percent-transparency">50%</span>
     </label>
 
-    <div class="search-container">
-      <label for="address-search-input">Search address (within Utrecht):</label>
-      <div class="search-input-group">
-        <input type="text" id="address-search-input" placeholder="e.g., Domplein 9">
-        <button id="search-address-btn">Search</button>
-      </div>
-      <div id="search-results"></div>
-    </div>
+ <div class="search-container">
+  <label for="address-search-input">Search address (within Utrecht):</label>
+  <div class="search-input-group">
+    <input type="text" id="address-search-input" placeholder="e.g., Domplein 9">
+    <button id="search-address-btn">Search</button>
+    <button id="clear-search-btn" style="background: #ccc; color: #333;">Clear Search</button> </div>
+  <div id="search-results"></div>
+</div>
 
     <div id="stats-export-container">
       <div id="selection-summary"></div>
@@ -697,6 +697,22 @@
         performAddressSearch();
       }
     });
+
+
+    const clearSearchBtn = document.getElementById('clear-search-btn'); // Get the new button
+
+    // Add event listener for the new "Clear Search" button
+    clearSearchBtn.addEventListener('click', clearAddressSearch);
+
+    // Function to clear the address search results and the marker
+    function clearAddressSearch() {
+        if (searchMarker) {
+            map.removeLayer(searchMarker); // Remove the marker from the map
+            searchMarker = null; // Reset the marker variable
+        }
+        addressSearchInput.value = ''; // Clear the input field
+        searchResultsDiv.innerHTML = ''; // Clear the search results display
+    }
 
     async function performAddressSearch() {
       const query = addressSearchInput.value.trim();
