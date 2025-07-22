@@ -465,61 +465,38 @@ deleteBtn.onAdd = function () {
 };
 deleteBtn.addTo(map);
     
-map.on(L.Draw.Event.CREATED, function (event) {
+ map.on(L.Draw.Event.CREATED, function (event) {
   const layer = event.layer;
   drawnItems.clearLayers();
   drawnItems.addLayer(layer);
 
+  let popupContent = "";
+
   if (event.layerType === "marker") {
-    // For markers, no popup and clear stats summary
+    const latlng = layer.getLatLng();
+    popupContent = `<b>Marker Selected</b><br>Lat: ${latlng.lat.toFixed(5)}<br>Lng: ${latlng.lng.toFixed(5)}`;
+
+    // Apply smaller icon to marker
     const smallIcon = L.icon({
       iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-      iconSize: [20, 30],
+      iconSize: [20, 30], // smaller
       iconAnchor: [10, 30]
     });
     layer.setIcon(smallIcon);
-
-    // Clear stats
-    document.getElementById('selection-summary').innerHTML = '';
-    controlBox.classList.remove('show-stats');
-
   } else if (event.layerType === "rectangle" || event.layerType === "polygon") {
     const latlngs = layer.getLatLngs()[0];
-    const areaSqMeters = L.GeometryUtil.geodesicArea(latlngs);
-    const areaKm2 = areaSqMeters / 1e6;
-
-    // Get selected grid cells intersecting this shape (you need to define this function)
-    const selected = getSelectedGridCells(layer);
-
-    // Calculate total and average suitability score
-    let totalScore = 0;
-    selected.forEach(cell => {
-      totalScore += cell.properties.mca_score || 0;
-    });
-    const avgScore = selected.length > 0 ? (totalScore / selected.length) : 0;
-
-    const popupContent = `
-      <b>Area Selected</b><br>
-      Area: approx. ${areaKm2.toFixed(2)} km²<br>
-      Number of grid cells: ${selected.length}<br>
-      Avg. suitability score: ${avgScore.toFixed(2)}
-    `;
-
-    layer.bindPopup(popupContent).openPopup();
-
-    // Update stats summary
-    if (selected.length) {
-      document.getElementById('selection-summary').innerHTML =
-        `Selected: <b>${selected.length}</b> gridcells<br>` +
-        `Area: <b>${areaKm2.toFixed(2)}</b> km²<br>` +
-        `Avg. score: <b>${avgScore.toFixed(2)}</b>`;
-      controlBox.classList.add('show-stats');
-    } else {
-      document.getElementById('selection-summary').innerHTML = '';
-      controlBox.classList.remove('show-stats');
-    }
+    const area = L.GeometryUtil.geodesicArea(latlngs);
+    popupContent = `<b>Area Selected</b><br>Approx. ${area.toFixed(2)} m²`;
   }
+
+  layer.bindPopup(popupContent).openPopup();
 });
+      selectedFeatures = selected;
+      if(selected.length){
+        document.getElementById('selection-summary').innerHTML =
+          `Selected: <b>${selected.length}</b> gridcells<br>Area: <b>${(totalAreaSqMeters/1e6).toFixed(1)}</b> km²<br>Avg. score: <b>${(totalScore/selected.length).toFixed(2)}</b>`;
+        controlBox.classList.add('show-stats');
+      }
 
     function clearSelectionAndStats() {
       drawnItems.clearLayers();
