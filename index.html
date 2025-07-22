@@ -507,61 +507,67 @@ deleteBtn.addTo(map);
 
 map.on(L.Draw.Event.CREATED, function(event) {
   const layer = event.layer;
-  const layerType = event.layerType; // polygon, rectangle, marker, etc.
+  const layerType = event.layerType;
 
-  // For multiple selections with Ctrl/Shift, don't clear layers
   const multiSelect = event.originalEvent && (event.originalEvent.ctrlKey || event.originalEvent.shiftKey);
   if (!multiSelect) {
     drawnItems.clearLayers();
+    if (layer_group) {
+      layer_group.eachLayer(l => l.setStyle(styleFeature(l.feature))); // reset styles
+    }
+    selectedFeatures = [];
   }
+
   drawnItems.addLayer(layer);
 
-  // Prepare GeoJSON for intersection
-  let drawnGeoJSON;
-  if (layerType === 'marker') {
-    // For a single point (marker), just take its coordinates as a Point
-    drawnGeoJSON = layer.toGeoJSON();
-  } else {
-    // For polygon/rectangle: convert shape to GeoJSON Polygon
-    drawnGeoJSON = layer.toGeoJSON();
-  }
-
-  const selected = [];
-  let totalScore = 0, totalAreaSqMeters = 0;
+  const drawnGeoJSON = layer.toGeoJSON();
+  const newSelected = [];
 
   if (layer_group) {
     layer_group.eachLayer(function(featureLayer) {
       const feature = featureLayer.toGeoJSON();
-      // For marker (point), check if point is inside the feature polygon
+      let intersects = false;
+
       if (layerType === 'marker') {
-        if (turf.booleanPointInPolygon(drawnGeoJSON, feature)) {
-          selected.push(feature);
-          featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
-          totalScore += feature.properties.MCA_score || 0;
-          totalAreaSqMeters += turf.area(feature);
-        } else {
-          featureLayer.setStyle(styleFeature(featureLayer.feature));
-        }
+        intersects = turf.booleanPointInPolygon(drawnGeoJSON, feature);
       } else {
-        // For polygon or rectangle: check polygon intersection
-        if (turf.booleanIntersects(drawnGeoJSON, feature)) {
-          selected.push(feature);
-          featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
-          totalScore += feature.properties.MCA_score || 0;
-          totalAreaSqMeters += turf.area(feature);
+        intersects = turf.booleanIntersects(drawnGeoJSON, feature);
+      }
+
+      if (intersects) {
+        const id = feature.properties.id;
+        const alreadySelected = selectedFeatures.some(f => f.properties.id === id);
+
+        if (multiSelect) {
+          if (alreadySelected) {
+            // Unselect
+            selectedFeatures = selectedFeatures.filter(f => f.properties.id !== id);
+            featureLayer.setStyle(styleFeature(featureLayer.feature));
+          } else {
+            // Add
+            selectedFeatures.push(feature);
+            featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
+          }
         } else {
-          featureLayer.setStyle(styleFeature(featureLayer.feature));
+          // Single click selection
+          selectedFeatures = [feature];
+          featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
         }
       }
     });
   }
 
-  selectedFeatures = selected;
+  // Now recalculate stats from selectedFeatures
+  if (selectedFeatures.length) {
+    let totalScore = 0, totalAreaSqMeters = 0;
+    selectedFeatures.forEach(f => {
+      totalScore += f.properties.MCA_score || 0;
+      totalAreaSqMeters += turf.area(f);
+    });
 
-  if (selected.length) {
-    const avgScore = (totalScore / selected.length).toFixed(2);
+    const avgScore = (totalScore / selectedFeatures.length).toFixed(2);
     const areaKm2 = (totalAreaSqMeters / 1e6).toFixed(1);
-    const count = selected.length;
+    const count = selectedFeatures.length;
 
     const popupContent = `
       <div id="popup-stats" style="font-family: Arial; font-size: 14px;">
@@ -573,28 +579,26 @@ map.on(L.Draw.Event.CREATED, function(event) {
       </div>
     `;
 
-    let popupLatLng;
-    if (layerType === 'marker') {
-      popupLatLng = layer.getLatLng();
-    } else {
-      popupLatLng = layer.getBounds().getCenter();
-    }
+    const popupLatLng = (layerType === 'marker')
+      ? layer.getLatLng()
+      : layer.getBounds().getCenter();
 
-    const popup = L.popup()
+    L.popup()
       .setLatLng(popupLatLng)
       .setContent(popupContent)
       .openOn(map);
 
-    map.once('popupopen', function() {
-      document.getElementById('popup-export-json-btn').onclick = function() {
+    map.once('popupopen', function () {
+      document.getElementById('popup-export-json-btn').onclick = function () {
         exportSelectedAsJSON(selectedFeatures);
       };
-      document.getElementById('popup-export-csv-btn').onclick = function() {
+      document.getElementById('popup-export-csv-btn').onclick = function () {
         exportSelectedAsCSV(selectedFeatures);
       };
     });
   }
 });
+
     
     // EXPORT FUNCTIES
     function exportSelectedAsCSV(selected) {
