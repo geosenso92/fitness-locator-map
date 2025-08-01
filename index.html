@@ -398,6 +398,14 @@
       <span id="percent-transparency">50%</span>
     </label>
 
+<div class="search-container" style="margin-top: 15px; border-top: 1px solid #ccc; padding-top: 15px;">
+    <label for="gemeente-select">Zoom naar gemeente(n):</label>
+    <select id="gemeente-select" multiple="multiple" style="width: 100%; height: 150px; font-size: 12px;"></select>
+    <button id="zoom-gemeente-btn" type="button" style="margin-top: 5px; width: 100%; padding: 7px; font-size: 12px; background: #2C3E83; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        Zoom naar selectie
+    </button>
+</div>
+    
     <div class="search-container">
       <label for="address-search-input">Search address (within Utrecht):</label>
       <div class="search-input-group">
@@ -633,30 +641,71 @@
 
     // GEMEENTEKAART
     let gemeentekaartLayer = null; 
+    let gemeentenamen = []; // Dit is de nieuwe variabele die u toevoegt
 
-    // Load and style the new Dutch municipalities layer
-    fetch('data/Gem_mapNL.geojson')
-      .then(r => r.json())
-      .then(data => {
+    
+// Load and style the new Dutch municipalities layer
+fetch('data/Gem_mapNL.geojson')
+    .then(r => r.json())
+    .then(data => {
         const utrechtFeature = data.features.find(f => f.properties.gemeentenaam === "Utrecht");
         if (utrechtFeature) {
             utrechtPolygon = utrechtFeature;
         }
 
         gemeentekaartLayer = L.geoJSON(data, {
-          style: { color: "#555", weight: 1, fillColor: "#f7f7f7", fillOpacity: 0.3 },
-          onEachFeature: (f, layer) => {
-            layer.bindTooltip(f.properties.gemeentenaam, { sticky: true });
-            layer.on({
-              mouseover: e => { e.target.setStyle({ weight: 2, color: '#000', fillOpacity: 0.5 }); e.target.openTooltip(); },
-              mouseout: e => { gemeentekaartLayer.resetStyle(e.target); e.target.closeTooltip(); }
-            });
-          }
+            style: { color: "#555", weight: 1, fillColor: "#f7f7f7", fillOpacity: 0.3 },
+            onEachFeature: (f, layer) => {
+                layer.bindTooltip(f.properties.gemeentenaam, { sticky: true });
+                layer.on({
+                    mouseover: e => { e.target.setStyle({ weight: 2, color: '#000', fillOpacity: 0.5 }); e.target.openTooltip(); },
+                    mouseout: e => { gemeentekaartLayer.resetStyle(e.target); e.target.closeTooltip(); }
+                });
+            }
         }).addTo(map);
 
         // Zoom to the bounds of the entire layer once it's loaded
         map.fitBounds(gemeentekaartLayer.getBounds());
-      });
+
+        // NIEUWE CODE: Vullen van het dropdown-menu met gemeentenamen
+        const gemeenten = data.features.map(f => f.properties.gemeentenaam);
+        gemeenten.sort();
+        const selectElement = document.getElementById('gemeente-select');
+        gemeenten.forEach(gemeente => {
+            const option = document.createElement('option');
+            option.value = gemeente;
+            option.text = gemeente;
+            selectElement.appendChild(option);
+        });
+    });
+    
+// NIEUWE CODE: Inzoomfunctionaliteit voor de geselecteerde gemeenten
+document.getElementById('zoom-gemeente-btn').onclick = () => {
+    const selectedOptions = Array.from(document.getElementById('gemeente-select').selectedOptions);
+    const selectedGemeenten = selectedOptions.map(option => option.value);
+
+    if (selectedGemeenten.length > 0) {
+        let selectedBounds = null;
+
+        gemeentekaartLayer.eachLayer(layer => {
+            const gemeentenaam = layer.feature.properties.gemeentenaam;
+            if (selectedGemeenten.includes(gemeentenaam)) {
+                if (selectedBounds === null) {
+                    selectedBounds = layer.getBounds();
+                } else {
+                    selectedBounds.extend(layer.getBounds());
+                }
+            }
+        });
+
+        if (selectedBounds) {
+            map.fitBounds(selectedBounds);
+        }
+    } else {
+        alert('Selecteer minimaal één gemeente.');
+    }
+};
+    
     // SLIDERS EN BUTTONS
     function updatePercentDisplay(idRange, idPercent) {
       const range = document.getElementById(idRange);
