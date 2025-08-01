@@ -407,15 +407,15 @@
     </button>
 </div>
     
-    <div class="search-container">
-      <label for="address-search-input">Search address (within Utrecht):</label>
-      <div class="search-input-group">
-        <input type="text" id="address-search-input" placeholder="e.g., Domplein 9">
-        <button id="search-address-btn">Search</button>
-        <button id="clear-search-btn" style="background: #ccc; color: #333;">Clear Search</button>
-      </div>
-      <div id="search-results"></div>
-    </div>
+<div class="search-container">
+  <label for="address-search-input">Zoek adres (heel Nederland):</label>
+  <div class="search-input-group">
+    <input type="text" id="address-search-input" placeholder="e.g., Dam 1, Amsterdam">
+    <button id="search-address-btn">Zoeken</button>
+    <button id="clear-search-btn" style="background: #ccc; color: #333;">Wissen</button>
+  </div>
+  <div id="search-results"></div>
+</div>
 
     <div id="stats-export-container">
       <div id="selection-summary"></div>
@@ -972,15 +972,80 @@ fetch('data/Gem_mapNL.geojson')
       if(opts && !opts.classList.contains('hidden') && !expBtn.contains(e.target)) opts.classList.add('hidden');
     });
 
-// --- ADDRESS SEARCH INTEGRATION ---
+// --- GEMEENTEN ZOEKFUNCTIE ---
+let alleGemeenten = []; // Variabele voor alle gemeenten
+const gemeenteSelect = document.getElementById('gemeente-select');
+const gemeenteSelectSearch = document.getElementById('gemeente-select-search');
+const zoomGemeenteBtn = document.getElementById('zoom-gemeente-btn');
+
+// Fetch en vullen van de gemeentelijst
+fetch('data/gem_mapNL.geojson')
+    .then(r => r.json())
+    .then(data => {
+        // ... (bestaande code voor het aanmaken van de gemeentelaag) ...
+        gemeentekaartLayer = L.geoJSON(data, {
+            // ... (stijlen en events) ...
+        }).addTo(map);
+
+        map.fitBounds(gemeentekaartLayer.getBounds());
+
+        alleGemeenten = data.features.map(f => f.properties.gemeentenaam);
+        alleGemeenten.sort();
+
+        // Initialiseer dropdown-menu
+        alleGemeenten.forEach(gemeente => {
+            const option = document.createElement('option');
+            option.value = gemeente;
+            option.text = gemeente;
+            gemeenteSelect.appendChild(option);
+        });
+
+        // Event-handlers voor de gemeentezoekfunctie
+        gemeenteSelectSearch.oninput = (e) => {
+            const filterText = e.target.value.toLowerCase();
+            gemeenteSelect.innerHTML = '';
+            alleGemeenten.filter(gemeente => gemeente.toLowerCase().includes(filterText))
+                .forEach(gemeente => {
+                    const option = document.createElement('option');
+                    option.value = gemeente;
+                    option.text = gemeente;
+                    gemeenteSelect.appendChild(option);
+                });
+        };
+
+        zoomGemeenteBtn.onclick = () => {
+            const selectedOptions = Array.from(gemeenteSelect.selectedOptions);
+            const selectedGemeenten = selectedOptions.map(option => option.value);
+
+            if (selectedGemeenten.length > 0) {
+                let selectedBounds = null;
+                gemeentekaartLayer.eachLayer(layer => {
+                    const gemeentenaam = layer.feature.properties.gemeentenaam;
+                    if (selectedGemeenten.includes(gemeentenaam)) {
+                        if (selectedBounds === null) {
+                            selectedBounds = layer.getBounds();
+                        } else {
+                            selectedBounds.extend(layer.getBounds());
+                        }
+                    }
+                });
+                if (selectedBounds) {
+                    map.fitBounds(selectedBounds);
+                }
+            } else {
+                alert('Selecteer minimaal één gemeente.');
+            }
+        };
+    });
+
+
+// --- ADRES ZOEKFUNCTIE ---
 const addressSearchInput = document.getElementById('address-search-input');
 const searchAddressBtn = document.getElementById('search-address-btn');
 const searchResultsDiv = document.getElementById('search-results');
 const clearSearchBtn = document.getElementById('clear-search-btn');
+let searchMarker = null;
 
-let searchMarker = null; // Variable to hold the marker for the searched address
-
-// Event listeners for the search functionality
 searchAddressBtn.addEventListener('click', performAddressSearch);
 addressSearchInput.addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
@@ -989,39 +1054,34 @@ addressSearchInput.addEventListener('keypress', function(e) {
 });
 clearSearchBtn.addEventListener('click', clearAddressSearch);
 
-// Function to clear the address search results and the marker
 function clearAddressSearch() {
     if (searchMarker) {
-        map.removeLayer(searchMarker); // Remove the marker from the map
-        searchMarker = null; // Reset the marker variable
+        map.removeLayer(searchMarker);
+        searchMarker = null;
     }
-    addressSearchInput.value = ''; // Clear the input field
-    searchResultsDiv.innerHTML = ''; // Clear the search results display
+    addressSearchInput.value = '';
+    searchResultsDiv.innerHTML = '';
 }
 
 async function performAddressSearch() {
     const query = addressSearchInput.value.trim();
     if (!query) {
-        searchResultsDiv.innerHTML = '<p>Please enter an address.</p>';
+        searchResultsDiv.innerHTML = '<p>Voer een adres in.</p>';
         return;
     }
-
-    searchResultsDiv.innerHTML = '<p>Searching...</p>';
-    
-    // Clear previous search marker
+    searchResultsDiv.innerHTML = '<p>Zoeken...</p>';
     if (searchMarker) {
         map.removeLayer(searchMarker);
         searchMarker = null;
     }
 
     try {
-        // Appending ", Netherlands" to the query to narrow down the search to the correct country
         const nominatimQuery = `${query}, Netherlands`;
         const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(nominatimQuery)}&format=json&limit=5`);
         const data = await response.json();
 
         if (data.length === 0) {
-            searchResultsDiv.innerHTML = '<p>No results found for your search.</p>';
+            searchResultsDiv.innerHTML = '<p>Geen resultaten gevonden.</p>';
             return;
         }
 
@@ -1032,44 +1092,41 @@ async function performAddressSearch() {
         }));
 
         displaySearchResults(results);
-
     } catch (error) {
         console.error('Error during geocoding:', error);
-        searchResultsDiv.innerHTML = '<p>Error during search. Please try again.</p>';
+        searchResultsDiv.innerHTML = '<p>Fout bij het zoeken. Probeer opnieuw.</p>';
     }
 }
 
 function displaySearchResults(results) {
     searchResultsDiv.innerHTML = '';
     if (results.length === 0) {
-        searchResultsDiv.innerHTML = '<p>No addresses found.</p>';
+        searchResultsDiv.innerHTML = '<p>Geen adressen gevonden.</p>';
         return;
     }
 
     const header = document.createElement('p');
-    header.innerHTML = `<strong>Found ${results.length} result(s):</strong>`;
+    header.innerHTML = `<strong>${results.length} resultaten gevonden:</strong>`;
     searchResultsDiv.appendChild(header);
 
     results.forEach(result => {
         const resultItem = document.createElement('div');
         resultItem.classList.add('search-result-item');
         resultItem.textContent = result.name;
-        resultItem.title = 'Click to view on map';
+        resultItem.title = 'Klik om op de kaart te bekijken';
         resultItem.onclick = () => {
-            // Clear previous search marker before adding a new one
             if (searchMarker) {
                 map.removeLayer(searchMarker);
             }
             searchMarker = L.marker(result.latlng).addTo(map)
                 .bindPopup(`<b>${result.name}</b>`).openPopup();
             
-            // Try to fit bounds, if available, otherwise just pan to the point
             if (result.bounds && result.bounds.length === 4) {
                 const southWest = L.latLng(parseFloat(result.bounds[0]), parseFloat(result.bounds[2]));
                 const northEast = L.latLng(parseFloat(result.bounds[1]), parseFloat(result.bounds[3]));
                 map.fitBounds(L.latLngBounds(southWest, northEast), { padding: [50, 50] });
             } else {
-                map.setView(result.latlng, 16); // Default zoom level if no bounds
+                map.setView(result.latlng, 16);
             }
         };
         searchResultsDiv.appendChild(resultItem);
