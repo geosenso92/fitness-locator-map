@@ -460,491 +460,168 @@
   <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
   <script src="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.js"></script>
   <script>
-    
-    // MAP INITIALISATIE
-    const map = L.map('map', {
-      zoomControl: false,
-      zoomSnap: 0.5,
-      zoomDelta: 0.5
-    }).setView([52.1326, 5.2913], 7); // Set initial view to a central point in NL
-    L.control.zoom({ position: 'topright' }).addTo(map);
-    L.control.scale({ position: 'bottomright' }).addTo(map);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>'
-    }).addTo(map);
+// MAP INITIALISATIE
+const map = L.map('map', {
+    zoomControl: false,
+    zoomSnap: 0.5,
+    zoomDelta: 0.5
+}).setView([52.1326, 5.2913], 7); // Set initial view to a central point in NL
+L.control.zoom({ position: 'topright' }).addTo(map);
+L.control.scale({ position: 'bottomright' }).addTo(map);
 
-    // KAART-LAGEN EN ICONS
-    let gymLayer, busLayer, layer_group;
-    const gymIcon = L.icon({
-      iconUrl: 'https://geosenso92.github.io/fitness-locator-map/data/gymsymbol.png',
-      iconSize: [24, 24], iconAnchor: [16, 32], popupAnchor: [0, -32]
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>'
+}).addTo(map);
+
+// KAART-LAGEN EN ICONS
+let gymLayer, busLayer, layer_group, gemeentekaartLayer;
+let alleGemeenten = [];
+const gymIcon = L.icon({
+    iconUrl: 'https://geosenso92.github.io/fitness-locator-map/data/gymsymbol.png',
+    iconSize: [24, 24], iconAnchor: [16, 32], popupAnchor: [0, -32]
+});
+
+// GYM LAYER
+fetch('data/fitness_030.json').then(r => r.json()).then(data => {
+    gymLayer = L.geoJSON(data, {
+        pointToLayer: (f, latlng) => L.marker(latlng, { icon: gymIcon }),
+        onEachFeature: (f, layer) => layer.bindPopup(`<strong>${f.properties.name || "Gym"}</strong>`)
     });
-
-    // GYM LAYER
-    fetch('data/fitness_030.json').then(r=>r.json()).then(data=>{
-      gymLayer = L.geoJSON(data, {
-        pointToLayer: (f,latlng)=>L.marker(latlng, {icon:gymIcon}),
-        onEachFeature: (f,layer)=>layer.bindPopup(`<strong>${f.properties.name||"Gym"}</strong>`)
-      });
+});
+// BUS LAYER
+fetch('data/busstops_030.json').then(r => r.json()).then(data => {
+    busLayer = L.geoJSON(data, {
+        pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: 2, fillColor: '#808080', color: '#000', weight: 1, opacity: 1, fillOpacity: 0.5 }),
+        onEachFeature: (f, layer) => layer.bindPopup(`<strong>${f.properties.name || "Busstop"}</strong>`)
     });
-    // BUS LAYER
-    fetch('data/busstops_030.json').then(r=>r.json()).then(data=>{
-      busLayer = L.geoJSON(data, {
-        pointToLayer: (f,latlng)=>L.circleMarker(latlng, {radius:2, fillColor:'#808080', color:'#000', weight:1, opacity:1, fillOpacity:0.5}),
-        onEachFeature: (f,layer)=>layer.bindPopup(`<strong>${f.properties.name||"Busstop"}</strong>`)
-      });
-    });
+});
 
-    let gebouwenLayer = null;
-
-    // Functie om de gebouwenlaag te laden
-    function loadGebouwenLayer() {
-      if (!gebouwenLayer) {
+// GEBOUWEN LAYER
+let gebouwenLayer = null;
+function loadGebouwenLayer() {
+    if (!gebouwenLayer) {
         gebouwenLayer = L.geoJSON(null, {
-          // hier kun je opties toevoegen, zoals style en onEachFeature
-          style: {
-            color: '#3388ff',
-            weight: 2,
-            opacity: 0.6,
-            fillOpacity: 0.3,
-          }
+            style: {
+                color: '#3388ff',
+                weight: 2,
+                opacity: 0.6,
+                fillOpacity: 0.3,
+            }
         });
-
-        // laad de GeoJSON data
         fetch('data/Gebouwen.geojson')
-          .then(response => response.json())
-          .then(data => {
-            gebouwenLayer.addData(data);
-          })
-          .catch(err => console.error('Fout bij laden gebouwenlaag:', err));
-      }
+            .then(response => response.json())
+            .then(data => {
+                gebouwenLayer.addData(data);
+            })
+            .catch(err => console.error('Fout bij laden gebouwenlaag:', err));
     }
-
-    // Eventlistener voor de checkbox
-    document.getElementById('toggle-buildings').addEventListener('change', function(e) {
-      if (e.target.checked) {
-        // laad de laag als die nog niet geladen is
+}
+document.getElementById('toggle-buildings').addEventListener('change', function(e) {
+    if (e.target.checked) {
         loadGebouwenLayer();
-        // voeg toe aan de kaart
-        gebouwenLayer.addTo(map);
-      } else {
-        // verwijder laag van de kaart
-        if (gebouwenLayer) {
-          map.removeLayer(gebouwenLayer);
-        }
-      }
-    });
+        if (gebouwenLayer) gebouwenLayer.addTo(map);
+    } else {
+        if (gebouwenLayer) map.removeLayer(gebouwenLayer);
+    }
+});
 
-    // NEW: Zoning Layer
-    let zoningLayer = null;
-
-    function loadZoningLayer() {
-        if (!zoningLayer) {
-            zoningLayer = L.geoJSON(null, {
-                style: function(feature) {
-                    // Example styling based on a 'type' property in your GeoJSON
-                    // Adjust colors and properties as needed for your specific zoning data
-                    switch (feature.properties.Type) { // Assuming a 'Type' property for different zoning areas
-                        case 'Residential': return { color: '#ff7800', weight: 1, opacity: 0.7, fillOpacity: 0.3, fillColor: '#ffeda0' };
-                        case 'Commercial': return { color: '#007bff', weight: 1, opacity: 0.7, fillOpacity: 0.3, fillColor: '#a0e4ff' };
-                        case 'Industrial': return { color: '#6a0dad', weight: 1, opacity: 0.7, fillOpacity: 0.3, fillColor: '#c4a0ff' };
-                        default: return { color: '#555555', weight: 1, opacity: 0.7, fillOpacity: 0.2, fillColor: '#cccccc' };
-                    }
-                },
-                onEachFeature: function(feature, layer) {
-                    // Adjust popup content based on your zoning data properties
-                    if (feature.properties && feature.properties.Type) {
-                        layer.bindPopup(`<strong>Zoning Type:</strong> ${feature.properties.Type}`);
-                    }
+// ZONING LAYER
+let zoningLayer = null;
+function loadZoningLayer() {
+    if (!zoningLayer) {
+        zoningLayer = L.geoJSON(null, {
+            style: function(feature) {
+                switch (feature.properties.Type) {
+                    case 'Residential': return { color: '#ff7800', weight: 1, opacity: 0.7, fillOpacity: 0.3, fillColor: '#ffeda0' };
+                    case 'Commercial': return { color: '#007bff', weight: 1, opacity: 0.7, fillOpacity: 0.3, fillColor: '#a0e4ff' };
+                    case 'Industrial': return { color: '#6a0dad', weight: 1, opacity: 0.7, fillOpacity: 0.3, fillColor: '#c4a0ff' };
+                    default: return { color: '#555555', weight: 1, opacity: 0.7, fillOpacity: 0.2, fillColor: '#cccccc' };
                 }
-            });
-
-            // Load the GeoJSON data for zoning
-            // REPLACE 'data/Zoning.geojson' with the actual path to your zoning GeoJSON file
-            fetch('data/Zoning.geojson') 
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    zoningLayer.addData(data);
-                })
-                .catch(err => console.error('Error loading zoning layer:', err));
-        }
-    }
-
-    // Event listener for the new Zoning checkbox
-    document.getElementById('toggle-zoning').addEventListener('change', function(e) {
-        if (e.target.checked) {
-            loadZoningLayer(); // Load the layer if not already loaded
-            if (zoningLayer) {
-                zoningLayer.addTo(map); // Add to map
+            },
+            onEachFeature: function(feature, layer) {
+                if (feature.properties && feature.properties.Type) {
+                    layer.bindPopup(`<strong>Zoning Type:</strong> ${feature.properties.Type}`);
+                }
             }
-        } else {
-            if (zoningLayer) {
-                map.removeLayer(zoningLayer); // Remove from map
-            }
-        }
-    });
-
-
-    // GRID LAYER (SUITABILITY)
-    let currentTransparency = 0.5;
-    function getColor(score) {
-      return score > 6 ? '#1a9641' :
-             score > 4 ? '#a6d96a' :
-             score > 2 ? '#fdae61' : '#d7191c';
+        });
+        fetch('data/Zoning.geojson')
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                zoningLayer.addData(data);
+            })
+            .catch(err => console.error('Error loading zoning layer:', err));
     }
-    function styleFeature(feature) {
-      return {
+}
+document.getElementById('toggle-zoning').addEventListener('change', function(e) {
+    if (e.target.checked) {
+        loadZoningLayer();
+        if (zoningLayer) zoningLayer.addTo(map);
+    } else {
+        if (zoningLayer) map.removeLayer(zoningLayer);
+    }
+});
+
+// GRID LAYER (SUITABILITY)
+let currentTransparency = 0.5;
+function getColor(score) {
+    return score > 6 ? '#1a9641' :
+        score > 4 ? '#a6d96a' :
+        score > 2 ? '#fdae61' : '#d7191c';
+}
+function styleFeature(feature) {
+    return {
         fillColor: getColor(feature.properties.MCA_score || 0),
         weight: 0.3,
         color: '#555',
         fillOpacity: currentTransparency
-      };
-    }
-    function popFeature(feature, layer) {
-      layer.on({ mouseover: highlightFeature, mouseout: resetHighlight });
-      layer.bindPopup('Suitability index: ' + ((feature.properties.MCA_score || 0).toFixed(2)));
-    }
-    function highlightFeature(e) { e.target.setStyle({ weight: 2, color: '#666' }); }
-    function resetHighlight(e) { layer_group.resetStyle(e.target); }
-    fetch('data/gridlayer_mca_fitness.geojson').then(res=>res.json()).then(data=>{
-      layer_group = L.geoJSON(data, { style: styleFeature, onEachFeature: popFeature });
-      if(document.getElementById('toggle-grid').checked) {
-        layer_group.addTo(map); updateScores();
-      }
-    });
-
-    // Transparency slider updates grid layer opacity immediately
-    document.getElementById('transparency-slider').addEventListener('input', function(e) {
-      currentTransparency = parseFloat(e.target.value);
-      document.getElementById('percent-transparency').textContent = Math.round(currentTransparency * 100) + '%';
-
-      if (layer_group) {
-        layer_group.setStyle(function(feature) {
-          return {
-            fillColor: getColor(feature.properties.MCA_score || 0),
-            weight: 0.3,
-            color: '#555',
-            fillOpacity: currentTransparency
-          };
-        });
-      }
-    });
-    
-    // OVERLAY/BASELAYER CONTROL
-    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'Tiles © Esri'});
-    L.control.layers(null, { "Satellite": satelliteLayer }, { position:'topright' }).addTo(map);
-
-
- // KOPPEL HIER DE GEBEURTENIS-HANDLERS
-        // Inzoomfunctionaliteit voor de geselecteerde gemeenten
-        document.getElementById('zoom-gemeente-btn').onclick = () => {
-            const selectedOptions = Array.from(document.getElementById('gemeente-select').selectedOptions);
-            const selectedGemeenten = selectedOptions.map(option => option.value);
-
-            if (selectedGemeenten.length > 0) {
-                let selectedBounds = null;
-
-                gemeentekaartLayer.eachLayer(layer => {
-                    const gemeentenaam = layer.feature.properties.gemeentenaam;
-                    if (selectedGemeenten.includes(gemeentenaam)) {
-                        if (selectedBounds === null) {
-                            selectedBounds = layer.getBounds();
-                        } else {
-                            selectedBounds.extend(layer.getBounds());
-                        }
-                    }
-                });
-
-                if (selectedBounds) {
-                    map.fitBounds(selectedBounds);
-                }
-            } else {
-                alert('Selecteer minimaal één gemeente.');
-            }
-        };
-
-        // Filteren van de gemeentelijst bij het typen
-        document.getElementById('gemeente-select-search').oninput = (e) => {
-            const filterText = e.target.value.toLowerCase();
-            const selectElement = document.getElementById('gemeente-select');
-
-            while (selectElement.firstChild) {
-                selectElement.removeChild(selectElement.firstChild);
-            }
-
-            alleGemeenten.filter(gemeente => gemeente.toLowerCase().includes(filterText))
-                .forEach(gemeente => {
-                    const option = document.createElement('option');
-                    option.value = gemeente;
-                    option.text = gemeente;
-                    selectElement.appendChild(option);
-                });
-
-// SLIDERS EN BUTTONS
-function updatePercentDisplay(idRange, idPercent) {
-    const range = document.getElementById(idRange);
-    const percent = document.getElementById(idPercent);
-    range.addEventListener('input', () => { percent.textContent = Math.round(parseFloat(range.value) * 100) + '%'; });
+    };
 }
-updatePercentDisplay('weight-fitness','percent-fitness');
-updatePercentDisplay('weight-ov','percent-ov');
-updatePercentDisplay('weight-pop','percent-pop');
-updatePercentDisplay('transparency-slider','percent-transparency');
+function popFeature(feature, layer) {
+    layer.on({ mouseover: highlightFeature, mouseout: resetHighlight });
+    layer.bindPopup('Suitability index: ' + ((feature.properties.MCA_score || 0).toFixed(2)));
+}
+function highlightFeature(e) { e.target.setStyle({ weight: 2, color: '#666' }); }
+function resetHighlight(e) { layer_group.resetStyle(e.target); }
+fetch('data/gridlayer_mca_fitness.geojson').then(res => res.json()).then(data => {
+    layer_group = L.geoJSON(data, { style: styleFeature, onEachFeature: popFeature });
+    if (document.getElementById('toggle-grid').checked) {
+        layer_group.addTo(map); updateScores();
+    }
+});
 
-window.clearSelectionAndStats = function() {
-    drawnItems.clearLayers();
-    selectedFeatures = [];
-    document.getElementById('selection-summary').innerHTML = '';
-    controlBox.classList.remove('show-stats');
-    if(layer_group) layer_group.eachLayer(featureLayer => featureLayer.setStyle(styleFeature(featureLayer.feature)));
-};
-    
-    function updateScores() {
-      let w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
-      let w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
-      let w_pop = parseFloat(document.getElementById('weight-pop').value) || 0;
-      const sum = w_ov + w_fit + w_pop;
-      if(sum>0) { w_ov/=sum; w_fit/=sum; w_pop/=sum; } else { w_ov=0.2; w_fit=0.3; w_pop=0.5; }
-      document.getElementById('weight-ov').value = w_ov.toFixed(3);
-      document.getElementById('percent-ov').textContent = Math.round(w_ov*100)+'%';
-      document.getElementById('weight-fitness').value = w_fit.toFixed(3);
-      document.getElementById('percent-fitness').textContent = Math.round(w_fit*100)+'%';
-      document.getElementById('weight-pop').value = w_pop.toFixed(3);
-      document.getElementById('percent-pop').textContent = Math.round(w_pop*100)+'%';
-      if (layer_group) {
-        layer_group.eachLayer(layer => {
-          const p = layer.feature.properties;
-          const ov = parseFloat(p.score_bus) || 0;
-          const fit = parseFloat(p.score_fit) || 0;
-          const pop = parseFloat(p.score_pop) || 0;
-          p.MCA_score = w_ov * ov + w_fit * fit + w_pop * pop;
-          layer.setStyle(styleFeature(layer.feature));
-          layer.bindPopup('Suitability index: ' + p.MCA_score.toFixed(2));
+// Transparency slider updates grid layer opacity immediately
+document.getElementById('transparency-slider').addEventListener('input', function(e) {
+    currentTransparency = parseFloat(e.target.value);
+    document.getElementById('percent-transparency').textContent = Math.round(currentTransparency * 100) + '%';
+    if (layer_group) {
+        layer_group.setStyle(function(feature) {
+            return {
+                fillColor: getColor(feature.properties.MCA_score || 0),
+                weight: 0.3,
+                color: '#555',
+                fillOpacity: currentTransparency
+            };
         });
-      }
     }
-    document.getElementById('update-btn').onclick = updateScores;
-    document.getElementById('transparency-slider').oninput = e => {
-      currentTransparency = parseFloat(e.target.value);
-      document.getElementById('percent-transparency').textContent = Math.round(currentTransparency*100)+'%';
-      if(layer_group) layer_group.setStyle(layer=>({...styleFeature(layer.feature)}));
-    };
-    document.getElementById('reset-btn').onclick = function() {
-      document.getElementById('weight-fitness').value = 0.3;
-      document.getElementById('weight-ov').value = 0.2;
-      document.getElementById('weight-pop').value = 0.5;
-      document.getElementById('transparency-slider').value = 0.5;
-      document.getElementById('percent-fitness').textContent = '30%';
-      document.getElementById('percent-ov').textContent = '20%';
-      document.getElementById('percent-pop').textContent = '50%';
-      document.getElementById('percent-transparency').textContent = '50%';
-      currentTransparency = 0.5;
-      if(layer_group) layer_group.setStyle(layer=>({...styleFeature(layer.feature)}));
-      updateScores();
-      clearSelectionAndStats();
-    };
+});
 
-    // TOGGLE LAGEN
-    document.getElementById('toggle-gym').onchange = function() {
-      if(this.checked) { if(gymLayer) gymLayer.addTo(map); }
-      else if(gymLayer && map.hasLayer(gymLayer)) map.removeLayer(gymLayer);
-    }
-    document.getElementById('toggle-bus').onchange = function() {
-      if(this.checked) { if(busLayer) busLayer.addTo(map); }
-      else if(busLayer && map.hasLayer(busLayer)) map.removeLayer(busLayer);
-    }
-    document.getElementById('toggle-grid').onchange = function() {
-      if(this.checked) { if(layer_group) {layer_group.addTo(map); updateScores();} }
-      else if(layer_group && map.hasLayer(layer_group)) map.removeLayer(layer_group);
-    }
+// OVERLAY/BASELAYER CONTROL
+const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles © Esri' });
+L.control.layers(null, { "Satellite": satelliteLayer }, { position: 'topright' }).addTo(map);
 
-    // CONTROL BOX MENU
-    const controlBox = document.getElementById('control-box');
-    const toggleMenuBtn = document.getElementById('toggle-menu-btn');
-    const closeMenuBtn = document.getElementById('close-menu-btn');
-    closeMenuBtn.onclick = () => { controlBox.style.display = 'none'; toggleMenuBtn.style.display = 'block'; };
-    toggleMenuBtn.onclick = () => { controlBox.style.display = 'flex'; toggleMenuBtn.style.display = 'none'; };
-    controlBox.style.display = 'flex';
-
-    // INFO ICONS
-    const infoIcon = document.getElementById('info-icon');
-    const infoText = document.getElementById('info-text');
-    infoIcon.onclick = e => { e.stopPropagation(); infoText.style.display = infoText.style.display==='block'?'none':'block'; };
-    document.addEventListener('click', e => { if (!infoIcon.contains(e.target) && !infoText.contains(e.target)) infoText.style.display = 'none'; });
-    document.getElementById('legend-info-toggle').onclick = function () {
-      const info = document.getElementById('legend-info');
-      info.style.display = info.style.display === 'none' ? 'block' : 'none';
-      this.title = info.style.display === 'block' ? 'Hide info' : 'Show info';
-    };
-
-    // TEKENEN EN SELECTIE
-    const drawnItems = new L.FeatureGroup().addTo(map);
-    let selectedFeatures = [];
-
-    // Patch Leaflet.Draw area display (km² ipv ha)
-    var LDraw = window.L.Draw ? window.L.Draw : window.L.draw;
-    if (LDraw && LDraw.Tooltip && LDraw.Tooltip.prototype) {
-      LDraw.Tooltip.prototype._formatArea = function(area) {
-        var km2 = area / 1e6;
-        return km2.toLocaleString('nl-NL', {maximumFractionDigits: 2}) + ' km²';
-      }
-    }
-
-    const drawControl = new L.Control.Draw({
-      position: "bottomright",
-      draw: {
-        polygon: true,
-        rectangle: false,
-        polyline: false,
-        circle: false,
-        marker: false,
-        circlemarker: false
-      }
-    });
-    map.addControl(drawControl);
-
-    // OLD BIN BUTTON (DELETE SELECTION)
-    const deleteBtn = L.control({ position: 'bottomright' });
-    deleteBtn.onAdd = function () {
-      const btn = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
-      btn.innerHTML = '🗑️';
-      btn.title = 'Delete selection';
-      btn.style.backgroundColor = 'white';
-      btn.style.width = '30px';
-      btn.style.height = '30px';
-      btn.style.lineHeight = '30px';
-      btn.style.textAlign = 'center';
-      btn.style.cursor = 'pointer';
-      btn.style.fontSize = '18px';
-      btn.style.boxShadow = '0 1px 4px rgba(0,0,0,0.4)';
-      btn.onclick = function () {
-        if (selectedFeatures.length === 0) return;
-        if (confirm('Are you sure you want to delete your selection?')) {
-          clearSelectionAndStats();
-        }
-      };
-      return btn;
-    };
-    deleteBtn.addTo(map);
-
-    map.on(L.Draw.Event.CREATED, function (event) {
-      const layer = event.layer;
-      drawnItems.clearLayers();
-      drawnItems.addLayer(layer);
-
-      const drawnGeoJSON = layer.toGeoJSON();
-      const selected = [];
-      let totalScore = 0, totalAreaSqMeters = 0;
-
-      if (layer_group) {
-        layer_group.eachLayer(function (featureLayer) {
-          const feature = featureLayer.toGeoJSON();
-          if (turf.booleanIntersects(drawnGeoJSON, feature)) {
-            selected.push(feature);
-            featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
-            totalScore += feature.properties.MCA_score || 0;
-            totalAreaSqMeters += turf.area(feature);
-          } else {
-            featureLayer.setStyle(styleFeature(featureLayer.feature));
-          }
-        });
-      }
-      selectedFeatures = selected;
-
-      if(selected.length){
-        const avgScore = (totalScore / selected.length).toFixed(2);
-        const areaKm2 = (totalAreaSqMeters / 1e6).toFixed(1);
-        const count = selected.length;
-
-        const popupContent = `
-          <div id="popup-stats" style="font-family: Arial; font-size: 14px;">
-            <strong>Selected: </strong> ${count} gridcells<br/>
-            <strong>Area: </strong> ${areaKm2} km²<br/>
-            <strong>Avg. score: </strong> ${avgScore}<br/><br/>
-            <button id="popup-export-json-btn" style="margin-right:5px;">Export GeoJSON</button>
-            <button id="popup-export-csv-btn">Export CSV</button>
-          </div>
-        `;
-
-        const popup = L.popup()
-          .setLatLng(layer.getBounds().getCenter())
-          .setContent(popupContent)
-          .openOn(map);
-
-        map.once('popupopen', function() {
-          document.getElementById('popup-export-json-btn').onclick = function() {
-            exportSelectedAsJSON(selectedFeatures);
-          };
-          document.getElementById('popup-export-csv-btn').onclick = function() {
-            exportSelectedAsCSV(selectedFeatures);
-          };
-        });
-      }
-    });
-    
-    // EXPORT FUNCTIES
-    function exportSelectedAsCSV(selected) {
-      if (!selected.length) return;
-      let csv = "id,MCA_score,area_km2\n";
-      selected.forEach((f,i)=>{
-        const areaKm2 = turf.area(f) / 1e6;
-        csv += (f.properties.id||i)+","+ (f.properties.MCA_score||0)+","+areaKm2.toFixed(1)+"\n";
-      });
-      let blob = new Blob([csv], {type: "text/csv"});
-      let url = URL.createObjectURL(blob);
-      let link = document.createElement('a');
-      link.href = url;
-      link.download = 'selected_gridcells.csv';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-    function exportSelectedAsJSON(selected) {
-      let data = selected.map((f,i)=>{
-        const areaKm2 = turf.area(f) / 1e6;
-        return {...f.properties, area_km2:+areaKm2.toFixed(1)};
-      });
-      let blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
-      let url = URL.createObjectURL(blob);
-      let link = document.createElement('a');
-      link.href = url;
-      link.download = 'selected_gridcells.json';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-    document.getElementById('export-btn').onclick = function() {
-      const opts = document.getElementById('export-options');
-      opts.classList.toggle('hidden');
-    }
-    document.getElementById('export-csv-btn').onclick = function(){ exportSelectedAsCSV(selectedFeatures);}
-    document.getElementById('export-json-btn').onclick = function(){ exportSelectedAsJSON(selectedFeatures);}
-    document.addEventListener('click',function(e){
-      const expBtn = document.getElementById('export-btn');
-      const opts = document.getElementById('export-options');
-      if(opts && !opts.classList.contains('hidden') && !expBtn.contains(e.target)) opts.classList.add('hidden');
-    });
-
-// --- GEMEENTEN ZOEKFUNCTIE ---
-let alleGemeenten = []; // Variabele voor alle gemeenten
+// GEMEENTEN ZOEKFUNCTIE (CORRECT)
 const gemeenteSelect = document.getElementById('gemeente-select');
 const gemeenteSelectSearch = document.getElementById('gemeente-select-search');
 const zoomGemeenteBtn = document.getElementById('zoom-gemeente-btn');
 
-          
-// Fetch en vullen van de gemeentelijst
 fetch('data/Gem_mapNL.geojson')
     .then(r => r.json())
     .then(data => {
-        // ... (bestaande code voor het aanmaken van de gemeentelaag) ...
         gemeentekaartLayer = L.geoJSON(data, {
-            // ... (stijlen en events) ...
             style: { color: "#555", weight: 1, fillColor: "#f7f7f7", fillOpacity: 0.3 },
             onEachFeature: (f, layer) => {
                 layer.bindTooltip(f.properties.gemeentenaam, { sticky: true });
@@ -954,14 +631,11 @@ fetch('data/Gem_mapNL.geojson')
                 });
             }
         }).addTo(map);
-
         map.fitBounds(gemeentekaartLayer.getBounds());
-
-        // Vul de variabele 'alleGemeenten' nu zonder 'let'
+        
         alleGemeenten = data.features.map(f => f.properties.gemeentenaam);
         alleGemeenten.sort();
 
-        // Initialiseer dropdown-menu
         alleGemeenten.forEach(gemeente => {
             const option = document.createElement('option');
             option.value = gemeente;
@@ -969,7 +643,6 @@ fetch('data/Gem_mapNL.geojson')
             gemeenteSelect.appendChild(option);
         });
 
-        // Event-handlers voor de gemeentezoekfunctie
         gemeenteSelectSearch.oninput = (e) => {
             const filterText = e.target.value.toLowerCase();
             gemeenteSelect.innerHTML = '';
@@ -985,7 +658,6 @@ fetch('data/Gem_mapNL.geojson')
         zoomGemeenteBtn.onclick = () => {
             const selectedOptions = Array.from(gemeenteSelect.selectedOptions);
             const selectedGemeenten = selectedOptions.map(option => option.value);
-
             if (selectedGemeenten.length > 0) {
                 let selectedBounds = null;
                 gemeentekaartLayer.eachLayer(layer => {
@@ -998,17 +670,14 @@ fetch('data/Gem_mapNL.geojson')
                         }
                     }
                 });
-                if (selectedBounds) {
-                    map.fitBounds(selectedBounds);
-                }
+                if (selectedBounds) map.fitBounds(selectedBounds);
             } else {
                 alert('Selecteer minimaal één gemeente.');
             }
         };
-    }); // <-- Deze afsluitende '});' was waarschijnlijk verdwenen
+    });
 
-
-// --- ADRES ZOEKFUNCTIE ---
+// ADRES ZOEKFUNCTIE
 const addressSearchInput = document.getElementById('address-search-input');
 const searchAddressBtn = document.getElementById('search-address-btn');
 const searchResultsDiv = document.getElementById('search-results');
@@ -1017,17 +686,13 @@ let searchMarker = null;
 
 searchAddressBtn.addEventListener('click', performAddressSearch);
 addressSearchInput.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        performAddressSearch();
-    }
+    if (e.key === 'Enter') performAddressSearch();
 });
 clearSearchBtn.addEventListener('click', clearAddressSearch);
 
 function clearAddressSearch() {
-    if (searchMarker) {
-        map.removeLayer(searchMarker);
-        searchMarker = null;
-    }
+    if (searchMarker) map.removeLayer(searchMarker);
+    searchMarker = null;
     addressSearchInput.value = '';
     searchResultsDiv.innerHTML = '';
 }
@@ -1039,27 +704,22 @@ async function performAddressSearch() {
         return;
     }
     searchResultsDiv.innerHTML = '<p>Zoeken...</p>';
-    if (searchMarker) {
-        map.removeLayer(searchMarker);
-        searchMarker = null;
-    }
+    if (searchMarker) map.removeLayer(searchMarker);
+    searchMarker = null;
 
     try {
         const nominatimQuery = `${query}, Netherlands`;
         const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(nominatimQuery)}&format=json&limit=5`);
         const data = await response.json();
-
         if (data.length === 0) {
             searchResultsDiv.innerHTML = '<p>Geen resultaten gevonden.</p>';
             return;
         }
-
         const results = data.map(result => ({
             name: result.display_name,
             latlng: [parseFloat(result.lat), parseFloat(result.lon)],
             bounds: result.boundingbox
         }));
-
         displaySearchResults(results);
     } catch (error) {
         console.error('Error during geocoding:', error);
@@ -1073,23 +733,17 @@ function displaySearchResults(results) {
         searchResultsDiv.innerHTML = '<p>Geen adressen gevonden.</p>';
         return;
     }
-
     const header = document.createElement('p');
     header.innerHTML = `<strong>${results.length} resultaten gevonden:</strong>`;
     searchResultsDiv.appendChild(header);
-
     results.forEach(result => {
         const resultItem = document.createElement('div');
         resultItem.classList.add('search-result-item');
         resultItem.textContent = result.name;
         resultItem.title = 'Klik om op de kaart te bekijken';
         resultItem.onclick = () => {
-            if (searchMarker) {
-                map.removeLayer(searchMarker);
-            }
-            searchMarker = L.marker(result.latlng).addTo(map)
-                .bindPopup(`<b>${result.name}</b>`).openPopup();
-            
+            if (searchMarker) map.removeLayer(searchMarker);
+            searchMarker = L.marker(result.latlng).addTo(map).bindPopup(`<b>${result.name}</b>`).openPopup();
             if (result.bounds && result.bounds.length === 4) {
                 const southWest = L.latLng(parseFloat(result.bounds[0]), parseFloat(result.bounds[2]));
                 const northEast = L.latLng(parseFloat(result.bounds[1]), parseFloat(result.bounds[3]));
@@ -1101,55 +755,283 @@ function displaySearchResults(results) {
         searchResultsDiv.appendChild(resultItem);
     });
 }
-document.querySelectorAll('.locked-label').forEach(label => {
-  label.addEventListener('click', function (e) {
-    e.preventDefault();
-    alert("This feature is locked. Please contact the administrator to unlock.");
-  });
+
+// SLIDERS EN BUTTONS
+function updatePercentDisplay(idRange, idPercent) {
+    const range = document.getElementById(idRange);
+    const percent = document.getElementById(idPercent);
+    range.addEventListener('input', () => { percent.textContent = Math.round(parseFloat(range.value) * 100) + '%'; });
+}
+updatePercentDisplay('weight-fitness', 'percent-fitness');
+updatePercentDisplay('weight-ov', 'percent-ov');
+updatePercentDisplay('weight-pop', 'percent-pop');
+updatePercentDisplay('transparency-slider', 'percent-transparency');
+
+window.clearSelectionAndStats = function() {
+    drawnItems.clearLayers();
+    selectedFeatures = [];
+    document.getElementById('selection-summary').innerHTML = '';
+    const controlBox = document.getElementById('control-box'); // Zorg dat controlBox is gedeclareerd
+    if (controlBox) controlBox.classList.remove('show-stats');
+    if (layer_group) layer_group.eachLayer(featureLayer => featureLayer.setStyle(styleFeature(featureLayer.feature)));
+};
+
+function updateScores() {
+    let w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
+    let w_fit = parseFloat(document.getElementById('weight-fitness').value) || 0;
+    let w_pop = parseFloat(document.getElementById('weight-pop').value) || 0;
+    const sum = w_ov + w_fit + w_pop;
+    if (sum > 0) { w_ov /= sum; w_fit /= sum; w_pop /= sum; } else { w_ov = 0.2; w_fit = 0.3; w_pop = 0.5; }
+    document.getElementById('weight-ov').value = w_ov.toFixed(3);
+    document.getElementById('percent-ov').textContent = Math.round(w_ov * 100) + '%';
+    document.getElementById('weight-fitness').value = w_fit.toFixed(3);
+    document.getElementById('percent-fitness').textContent = Math.round(w_fit * 100) + '%';
+    document.getElementById('weight-pop').value = w_pop.toFixed(3);
+    document.getElementById('percent-pop').textContent = Math.round(w_pop * 100) + '%';
+    if (layer_group) {
+        layer_group.eachLayer(layer => {
+            const p = layer.feature.properties;
+            const ov = parseFloat(p.score_bus) || 0;
+            const fit = parseFloat(p.score_fit) || 0;
+            const pop = parseFloat(p.score_pop) || 0;
+            p.MCA_score = w_ov * ov + w_fit * fit + w_pop * pop;
+            layer.setStyle(styleFeature(layer.feature));
+            layer.bindPopup('Suitability index: ' + p.MCA_score.toFixed(2));
+        });
+    }
+}
+document.getElementById('update-btn').onclick = updateScores;
+document.getElementById('transparency-slider').oninput = e => {
+    currentTransparency = parseFloat(e.target.value);
+    document.getElementById('percent-transparency').textContent = Math.round(currentTransparency * 100) + '%';
+    if (layer_group) layer_group.setStyle(layer => ({ ...styleFeature(layer.feature) }));
+};
+document.getElementById('reset-btn').onclick = function() {
+    document.getElementById('weight-fitness').value = 0.3;
+    document.getElementById('weight-ov').value = 0.2;
+    document.getElementById('weight-pop').value = 0.5;
+    document.getElementById('transparency-slider').value = 0.5;
+    document.getElementById('percent-fitness').textContent = '30%';
+    document.getElementById('percent-ov').textContent = '20%';
+    document.getElementById('percent-pop').textContent = '50%';
+    document.getElementById('percent-transparency').textContent = '50%';
+    currentTransparency = 0.5;
+    if (layer_group) layer_group.setStyle(layer => ({ ...styleFeature(layer.feature) }));
+    updateScores();
+    clearSelectionAndStats();
+};
+
+// TOGGLE LAGEN
+document.getElementById('toggle-gym').onchange = function() {
+    if (this.checked) { if (gymLayer) gymLayer.addTo(map); } else if (gymLayer && map.hasLayer(gymLayer)) map.removeLayer(gymLayer);
+}
+document.getElementById('toggle-bus').onchange = function() {
+    if (this.checked) { if (busLayer) busLayer.addTo(map); } else if (busLayer && map.hasLayer(busLayer)) map.removeLayer(busLayer);
+}
+document.getElementById('toggle-grid').onchange = function() {
+    if (this.checked) { if (layer_group) { layer_group.addTo(map); updateScores(); } } else if (layer_group && map.hasLayer(layer_group)) map.removeLayer(layer_group);
+}
+
+// CONTROL BOX MENU
+const controlBox = document.getElementById('control-box');
+const toggleMenuBtn = document.getElementById('toggle-menu-btn');
+const closeMenuBtn = document.getElementById('close-menu-btn');
+closeMenuBtn.onclick = () => { controlBox.style.display = 'none'; toggleMenuBtn.style.display = 'block'; };
+toggleMenuBtn.onclick = () => { controlBox.style.display = 'flex'; toggleMenuBtn.style.display = 'none'; };
+if (controlBox) controlBox.style.display = 'flex';
+
+// INFO ICONS
+const infoIcon = document.getElementById('info-icon');
+const infoText = document.getElementById('info-text');
+infoIcon.onclick = e => { e.stopPropagation(); infoText.style.display = infoText.style.display === 'block' ? 'none' : 'block'; };
+document.addEventListener('click', e => { if (infoText && !infoIcon.contains(e.target) && !infoText.contains(e.target)) infoText.style.display = 'none'; });
+document.getElementById('legend-info-toggle').onclick = function() {
+    const info = document.getElementById('legend-info');
+    if (info) {
+        info.style.display = info.style.display === 'none' ? 'block' : 'none';
+        this.title = info.style.display === 'block' ? 'Hide info' : 'Show info';
+    }
+};
+
+// TEKENEN EN SELECTIE
+const drawnItems = new L.FeatureGroup().addTo(map);
+let selectedFeatures = [];
+
+// Patch Leaflet.Draw area display (km² ipv ha)
+var LDraw = window.L.Draw ? window.L.Draw : window.L.draw;
+if (LDraw && LDraw.Tooltip && LDraw.Tooltip.prototype) {
+    LDraw.Tooltip.prototype._formatArea = function(area) {
+        var km2 = area / 1e6;
+        return km2.toLocaleString('nl-NL', { maximumFractionDigits: 2 }) + ' km²';
+    }
+}
+
+const drawControl = new L.Control.Draw({
+    position: "bottomright",
+    draw: {
+        polygon: true,
+        rectangle: false,
+        polyline: false,
+        circle: false,
+        marker: false,
+        circlemarker: false
+    }
+});
+map.addControl(drawControl);
+
+// OLD BIN BUTTON (DELETE SELECTION)
+const deleteBtn = L.control({ position: 'bottomright' });
+deleteBtn.onAdd = function() {
+    const btn = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+    btn.innerHTML = '🗑️';
+    btn.title = 'Delete selection';
+    btn.style.backgroundColor = 'white';
+    btn.style.width = '30px';
+    btn.style.height = '30px';
+    btn.style.lineHeight = '30px';
+    btn.style.textAlign = 'center';
+    btn.style.cursor = 'pointer';
+    btn.style.fontSize = '18px';
+    btn.style.boxShadow = '0 1px 4px rgba(0,0,0,0.4)';
+    btn.onclick = function() {
+        if (selectedFeatures.length === 0) return;
+        if (confirm('Are you sure you want to delete your selection?')) {
+            clearSelectionAndStats();
+        }
+    };
+    return btn;
+};
+deleteBtn.addTo(map);
+
+map.on(L.Draw.Event.CREATED, function(event) {
+    const layer = event.layer;
+    drawnItems.clearLayers();
+    drawnItems.addLayer(layer);
+    const drawnGeoJSON = layer.toGeoJSON();
+    const selected = [];
+    let totalScore = 0, totalAreaSqMeters = 0;
+    if (layer_group) {
+        layer_group.eachLayer(function(featureLayer) {
+            const feature = featureLayer.toGeoJSON();
+            if (typeof turf !== 'undefined' && turf.booleanIntersects(drawnGeoJSON, feature)) {
+                selected.push(feature);
+                featureLayer.setStyle({ color: 'red', weight: 2, fillOpacity: 0.8 });
+                totalScore += feature.properties.MCA_score || 0;
+                totalAreaSqMeters += turf.area(feature);
+            } else {
+                featureLayer.setStyle(styleFeature(featureLayer.feature));
+            }
+        });
+    }
+    selectedFeatures = selected;
+
+    if (selected.length) {
+        const avgScore = (totalScore / selected.length).toFixed(2);
+        const areaKm2 = (totalAreaSqMeters / 1e6).toFixed(1);
+        const count = selected.length;
+        const popupContent = `
+            <div id="popup-stats" style="font-family: Arial; font-size: 14px;">
+                <strong>Selected: </strong> ${count} gridcells<br/>
+                <strong>Area: </strong> ${areaKm2} km²<br/>
+                <strong>Avg. score: </strong> ${avgScore}<br/><br/>
+                <button id="popup-export-json-btn" style="margin-right:5px;">Export GeoJSON</button>
+                <button id="popup-export-csv-btn">Export CSV</button>
+            </div>
+        `;
+        const popup = L.popup().setLatLng(layer.getBounds().getCenter()).setContent(popupContent).openOn(map);
+        map.once('popupopen', function() {
+            document.getElementById('popup-export-json-btn').onclick = function() {
+                exportSelectedAsJSON(selectedFeatures);
+            };
+            document.getElementById('popup-export-csv-btn').onclick = function() {
+                exportSelectedAsCSV(selectedFeatures);
+            };
+        });
+    }
 });
 
-document.getElementById("ai-suggest-btn").addEventListener("click", function () {
-  let highestScore = -Infinity;
-  let bestCells = [];
-
-  if (!layer_group) {
-    alert("Please load and calculate the suitability index first.");
-    return;
-  }
-
-  layer_group.eachLayer(function (layer) {
-    const score = layer.feature?.properties?.MCA_score;
-
-    if (typeof score !== "number") return;
-
-    if (score > highestScore) {
-      highestScore = score;
-      bestCells = [layer];
-    } else if (score === highestScore) {
-      bestCells.push(layer);
-    }
-  });
-
-  if (bestCells.length === 0) {
-    alert("No grid cells found with suitability scores.");
-    return;
-  }
-
-  // Optional: reset all grid styles first
-  layer_group.eachLayer(l => l.setStyle(styleFeature(l.feature)));
-
-  bestCells.forEach(cell => {
-    cell.setStyle({
-      color: "#ff0000",
-      weight: 3,
-      fillColor: "#ff6666",
-      fillOpacity: 0.6
+// EXPORT FUNCTIES
+function exportSelectedAsCSV(selected) {
+    if (!selected.length) return;
+    let csv = "id,MCA_score,area_km2\n";
+    selected.forEach((f, i) => {
+        const areaKm2 = turf.area(f) / 1e6;
+        csv += (f.properties.id || i) + "," + (f.properties.MCA_score || 0) + "," + areaKm2.toFixed(1) + "\n";
     });
-    cell.bringToFront();
-  });
+    let blob = new Blob([csv], { type: "text/csv" });
+    let url = URL.createObjectURL(blob);
+    let link = document.createElement('a');
+    link.href = url;
+    link.download = 'selected_gridcells.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+function exportSelectedAsJSON(selected) {
+    let data = selected.map((f, i) => {
+        const areaKm2 = turf.area(f) / 1e6;
+        return { ...f.properties, area_km2: +areaKm2.toFixed(1) };
+    });
+    let blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    let url = URL.createObjectURL(blob);
+    let link = document.createElement('a');
+    link.href = url;
+    link.download = 'selected_gridcells.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+document.getElementById('export-btn').onclick = function() {
+    const opts = document.getElementById('export-options');
+    opts.classList.toggle('hidden');
+}
+document.getElementById('export-csv-btn').onclick = function() { exportSelectedAsCSV(selectedFeatures); }
+document.getElementById('export-json-btn').onclick = function() { exportSelectedAsJSON(selectedFeatures); }
+document.addEventListener('click', function(e) {
+    const expBtn = document.getElementById('export-btn');
+    const opts = document.getElementById('export-options');
+    if (opts && !opts.classList.contains('hidden') && !expBtn.contains(e.target)) opts.classList.add('hidden');
+});
 
-  // Optional: zoom to the first best cell
-  map.fitBounds(bestCells[0].getBounds());
+document.querySelectorAll('.locked-label').forEach(label => {
+    label.addEventListener('click', function(e) {
+        e.preventDefault();
+        alert("This feature is locked. Please contact the administrator to unlock.");
+    });
+});
+
+document.getElementById("ai-suggest-btn").addEventListener("click", function() {
+    let highestScore = -Infinity;
+    let bestCells = [];
+    if (!layer_group) {
+        alert("Please load and calculate the suitability index first.");
+        return;
+    }
+    layer_group.eachLayer(function(layer) {
+        const score = layer.feature?.properties?.MCA_score;
+        if (typeof score !== "number") return;
+        if (score > highestScore) {
+            highestScore = score;
+            bestCells = [layer];
+        } else if (score === highestScore) {
+            bestCells.push(layer);
+        }
+    });
+    if (bestCells.length === 0) {
+        alert("No grid cells found with suitability scores.");
+        return;
+    }
+    layer_group.eachLayer(l => l.setStyle(styleFeature(l.feature)));
+    bestCells.forEach(cell => {
+        cell.setStyle({
+            color: "#ff0000",
+            weight: 3,
+            fillColor: "#ff6666",
+            fillOpacity: 0.6
+        });
+        cell.bringToFront();
+    });
+    map.fitBounds(bestCells[0].getBounds());
 });
     
   </script>
