@@ -23,19 +23,18 @@
   }
 
   #header-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 36px;
-    background: white;
-    display: flex;
-    align-items: center;
-    padding: 0 15px;
-    z-index: 1200;
-    user-select: none;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
+      position: absolute;
+      top: 0;
+      left: 320px; /* Aligned to the right of the control box */
+      right: 0;
+      height: 36px;
+      background: white;
+      display: flex;
+      align-items: center;
+      padding: 0 15px;
+      z-index: 1200;
+      user-select: none;
+    }
 
   #logo {
     height: 32px;
@@ -49,33 +48,34 @@
   }
 
   #map {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 0;
-    background: #eee;
-  }
+      position: absolute;
+      top: 36px; /* Starts below the header */
+      left: 320px; /* Starts to the right of the control box */
+      right: 0;
+      bottom: 0;
+      z-index: 0;
+      background: #eee;
+    }
 
   .control-box {
     position: fixed;
-    top: 46px; /* Starts below the header, with a small 10px gap */
-    left: 10px;
-    width: 320px;
-    max-height: calc(100vh - 66px); /* Adjusted to fit within viewport with margins */
-    overflow-y: auto;
-    background: rgba(255, 255, 255, 0.95); /* Slightly less transparent */
-    padding: 10px 12px 15px 12px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-    z-index: 1100;
-    font-size: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    box-sizing: border-box;
-  }
+    top: 0;
+      left: 0;
+      bottom: 0;
+      width: 320px;
+      max-height: 100vh;
+      overflow-y: auto;
+      background: rgba(255,255,255,0.85);
+      padding: 10px 12px 15px 12px;
+      border-radius: 0;
+      box-shadow: none;
+      z-index: 1100;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-sizing: border-box;
+    }
 
   .control-box-title {
     font-size: 14px;
