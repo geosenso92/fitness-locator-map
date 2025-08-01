@@ -635,7 +635,7 @@
     let gemeentekaartLayer = null; 
 
     // Load and style the new Dutch municipalities layer
-    fetch('data/gem_mapNL.geojson')
+    fetch('data/Gem_mapNL.geojson')
       .then(r => r.json())
       .then(data => {
         const utrechtFeature = data.features.find(f => f.properties.gemeentenaam === "Utrecht");
