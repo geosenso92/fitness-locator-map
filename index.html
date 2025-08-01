@@ -641,7 +641,7 @@
     L.control.layers(null, { "Satellite": satelliteLayer }, { position:'topright' }).addTo(map);
 
 
-        // KOPPEL HIER DE GEBEURTENIS-HANDLERS
+ // KOPPEL HIER DE GEBEURTENIS-HANDLERS
         // Inzoomfunctionaliteit voor de geselecteerde gemeenten
         document.getElementById('zoom-gemeente-btn').onclick = () => {
             const selectedOptions = Array.from(document.getElementById('gemeente-select').selectedOptions);
@@ -686,26 +686,26 @@
                     selectElement.appendChild(option);
                 });
         };
-    });
-    
-    // SLIDERS EN BUTTONS
-    function updatePercentDisplay(idRange, idPercent) {
-      const range = document.getElementById(idRange);
-      const percent = document.getElementById(idPercent);
-      range.addEventListener('input', () => { percent.textContent = Math.round(parseFloat(range.value) * 100) + '%'; });
-    }
-    updatePercentDisplay('weight-fitness','percent-fitness');
-    updatePercentDisplay('weight-ov','percent-ov');
-    updatePercentDisplay('weight-pop','percent-pop');
-    updatePercentDisplay('transparency-slider','percent-transparency');
+    }); // Deze hoort bij de fetch-functie
 
-    window.clearSelectionAndStats = function() {
-      drawnItems.clearLayers();
-      selectedFeatures = [];
-      document.getElementById('selection-summary').innerHTML = '';
-      controlBox.classList.remove('show-stats');
-      if(layer_group) layer_group.eachLayer(featureLayer => featureLayer.setStyle(styleFeature(featureLayer.feature)));
-    };
+// SLIDERS EN BUTTONS
+function updatePercentDisplay(idRange, idPercent) {
+    const range = document.getElementById(idRange);
+    const percent = document.getElementById(idPercent);
+    range.addEventListener('input', () => { percent.textContent = Math.round(parseFloat(range.value) * 100) + '%'; });
+}
+updatePercentDisplay('weight-fitness','percent-fitness');
+updatePercentDisplay('weight-ov','percent-ov');
+updatePercentDisplay('weight-pop','percent-pop');
+updatePercentDisplay('transparency-slider','percent-transparency');
+
+window.clearSelectionAndStats = function() {
+    drawnItems.clearLayers();
+    selectedFeatures = [];
+    document.getElementById('selection-summary').innerHTML = '';
+    controlBox.classList.remove('show-stats');
+    if(layer_group) layer_group.eachLayer(featureLayer => featureLayer.setStyle(styleFeature(featureLayer.feature)));
+};
     
     function updateScores() {
       let w_ov = parseFloat(document.getElementById('weight-ov').value) || 0;
