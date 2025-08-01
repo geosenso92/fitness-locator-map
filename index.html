@@ -937,6 +937,7 @@ const gemeenteSelect = document.getElementById('gemeente-select');
 const gemeenteSelectSearch = document.getElementById('gemeente-select-search');
 const zoomGemeenteBtn = document.getElementById('zoom-gemeente-btn');
 
+          
 // Fetch en vullen van de gemeentelijst
 fetch('data/Gem_mapNL.geojson')
     .then(r => r.json())
@@ -944,10 +945,19 @@ fetch('data/Gem_mapNL.geojson')
         // ... (bestaande code voor het aanmaken van de gemeentelaag) ...
         gemeentekaartLayer = L.geoJSON(data, {
             // ... (stijlen en events) ...
+            style: { color: "#555", weight: 1, fillColor: "#f7f7f7", fillOpacity: 0.3 },
+            onEachFeature: (f, layer) => {
+                layer.bindTooltip(f.properties.gemeentenaam, { sticky: true });
+                layer.on({
+                    mouseover: e => { e.target.setStyle({ weight: 2, color: '#000', fillOpacity: 0.5 }); e.target.openTooltip(); },
+                    mouseout: e => { gemeentekaartLayer.resetStyle(e.target); e.target.closeTooltip(); }
+                });
+            }
         }).addTo(map);
 
         map.fitBounds(gemeentekaartLayer.getBounds());
 
+        // Vul de variabele 'alleGemeenten' nu zonder 'let'
         alleGemeenten = data.features.map(f => f.properties.gemeentenaam);
         alleGemeenten.sort();
 
@@ -995,7 +1005,7 @@ fetch('data/Gem_mapNL.geojson')
                 alert('Selecteer minimaal één gemeente.');
             }
         };
-    });
+    }); // <-- Deze afsluitende '});' was waarschijnlijk verdwenen
 
 
 // --- ADRES ZOEKFUNCTIE ---
