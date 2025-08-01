@@ -30,10 +30,21 @@
       z-index: 0; background: #eee;
     }
     .control-box {
-      position: absolute; align-items: center; top: 40px; left: 5px; width: 320px;
-      background: rgba(255,255,255,0.85); padding: 10px 12px 15px 12px;
-      border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
-      z-index: 1100; font-size: 12px; display: flex; flex-direction: column; gap: 10px;
+      position: fixed; /* Changed from 'absolute' to 'fixed' */
+      top: 40px;
+      left: 5px;
+      width: 320px;
+      max-height: calc(100vh - 50px); /* This will make it scrollable if it's too tall */
+      overflow-y: auto; /* Adds a scrollbar if content overflows */
+      background: rgba(255, 255, 255, 0.85);
+      padding: 10px 12px 15px 12px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+      z-index: 1100;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
     .control-box-title { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #2C3E83; }
     .control-row { display: flex; align-items: center; gap: 8px; }
@@ -59,9 +70,20 @@
     #transparency-label { margin-top: 10px; user-select: none; }
     #percent-fitness, #percent-ov, #percent-pop, #percent-transparency { margin-left: 4px; font-weight: 600; }
     #toggle-menu-btn {
-      position: absolute; top: 40px; left: 5px; background: rgba(255,255,255,0.75);
-      padding: 10px 15px; border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
-      z-index: 1150; font-size: 13px; cursor: pointer; user-select: none; display: none; width: 160px; text-align: center;
+      position: absolute;
+      top: 40px;
+      left: 5px;
+      background: rgba(255,255,255,0.75);
+      padding: 10px 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      z-index: 1150;
+      font-size: 13px;
+      cursor: pointer;
+      user-select: none;
+      display: none;
+      width: 160px;
+      text-align: center;
     }
     #close-menu-btn { margin-top: 4px; }
     .legend {
@@ -266,9 +288,8 @@
         </div>
       </div>
     </div>
-    <button id="close-menu-btn" type="button">Toggle menu</button>
   </div>
-  <button id="toggle-menu-btn">Open location finder menu</button>
+  
   <div class="legend" id="legend">
     <div id="legend-info-toggle" title="The suitability index is the result of factors in which weightings are applied. 0 = not suitable | 10 = highly suitable">ℹ️</div>
     <div id="legend-toggle" title="Toggle legend">−</div>
@@ -480,7 +501,7 @@
     });
     
     // OVERLAY/BASELAYER CONTROL
-    const satelliteLayer = L.tileLayer('https://server.arcgisonoline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'Tiles © Esri'});
+    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, attribution:'Tiles © Esri'});
     L.control.layers(null, { "Satellite": satelliteLayer }, { position:'topright' }).addTo(map);
 
     // GEMEENTEKAART
