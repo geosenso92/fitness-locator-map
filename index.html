@@ -399,7 +399,8 @@
     </label>
 
 <div class="search-container" style="margin-top: 15px; border-top: 1px solid #ccc; padding-top: 15px;">
-    <label for="gemeente-select">Zoom naar gemeente(n):</label>
+    <label for="gemeente-select-search">Zoek en zoom naar gemeente(n):</label>
+    <input type="text" id="gemeente-select-search" placeholder="Type een gemeentenaam..." style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; margin-bottom: 5px;">
     <select id="gemeente-select" multiple="multiple" style="width: 100%; height: 150px; font-size: 12px;"></select>
     <button id="zoom-gemeente-btn" type="button" style="margin-top: 5px; width: 100%; padding: 7px; font-size: 12px; background: #2C3E83; color: white; border: none; border-radius: 4px; cursor: pointer;">
         Zoom naar selectie
@@ -642,12 +643,14 @@
     // GEMEENTEKAART
     let gemeentekaartLayer = null; 
     let gemeentenamen = []; // Dit is de nieuwe variabele die u toevoegt
+    let alleGemeenten = []; // Dit is de nieuwe variabele
 
     
 // Load and style the new Dutch municipalities layer
 fetch('data/Gem_mapNL.geojson')
     .then(r => r.json())
     .then(data => {
+        // ... (bestaande code voor het aanmaken van gemeentekaartLayer) ...
         const utrechtFeature = data.features.find(f => f.properties.gemeentenaam === "Utrecht");
         if (utrechtFeature) {
             utrechtPolygon = utrechtFeature;
@@ -664,47 +667,65 @@ fetch('data/Gem_mapNL.geojson')
             }
         }).addTo(map);
 
-        // Zoom to the bounds of the entire layer once it's loaded
         map.fitBounds(gemeentekaartLayer.getBounds());
 
-        // NIEUWE CODE: Vullen van het dropdown-menu met gemeentenamen
-        const gemeenten = data.features.map(f => f.properties.gemeentenaam);
-        gemeenten.sort();
+        // Vullen van het dropdown-menu met gemeentenamen
+        alleGemeenten = data.features.map(f => f.properties.gemeentenaam);
+        alleGemeenten.sort();
         const selectElement = document.getElementById('gemeente-select');
-        gemeenten.forEach(gemeente => {
+        alleGemeenten.forEach(gemeente => {
             const option = document.createElement('option');
             option.value = gemeente;
             option.text = gemeente;
             selectElement.appendChild(option);
         });
-    });
-    
-// NIEUWE CODE: Inzoomfunctionaliteit voor de geselecteerde gemeenten
-document.getElementById('zoom-gemeente-btn').onclick = () => {
-    const selectedOptions = Array.from(document.getElementById('gemeente-select').selectedOptions);
-    const selectedGemeenten = selectedOptions.map(option => option.value);
 
-    if (selectedGemeenten.length > 0) {
-        let selectedBounds = null;
+        // KOPPEL HIER DE GEBEURTENIS-HANDLERS
+        // Inzoomfunctionaliteit voor de geselecteerde gemeenten
+        document.getElementById('zoom-gemeente-btn').onclick = () => {
+            const selectedOptions = Array.from(document.getElementById('gemeente-select').selectedOptions);
+            const selectedGemeenten = selectedOptions.map(option => option.value);
 
-        gemeentekaartLayer.eachLayer(layer => {
-            const gemeentenaam = layer.feature.properties.gemeentenaam;
-            if (selectedGemeenten.includes(gemeentenaam)) {
-                if (selectedBounds === null) {
-                    selectedBounds = layer.getBounds();
-                } else {
-                    selectedBounds.extend(layer.getBounds());
+            if (selectedGemeenten.length > 0) {
+                let selectedBounds = null;
+
+                gemeentekaartLayer.eachLayer(layer => {
+                    const gemeentenaam = layer.feature.properties.gemeentenaam;
+                    if (selectedGemeenten.includes(gemeentenaam)) {
+                        if (selectedBounds === null) {
+                            selectedBounds = layer.getBounds();
+                        } else {
+                            selectedBounds.extend(layer.getBounds());
+                        }
+                    }
+                });
+
+                if (selectedBounds) {
+                    map.fitBounds(selectedBounds);
                 }
+            } else {
+                alert('Selecteer minimaal één gemeente.');
             }
-        });
+        };
 
-        if (selectedBounds) {
-            map.fitBounds(selectedBounds);
-        }
-    } else {
-        alert('Selecteer minimaal één gemeente.');
-    }
-};
+        // Filteren van de gemeentelijst bij het typen
+        document.getElementById('gemeente-select-search').oninput = (e) => {
+            const filterText = e.target.value.toLowerCase();
+            const selectElement = document.getElementById('gemeente-select');
+
+            while (selectElement.firstChild) {
+                selectElement.removeChild(selectElement.firstChild);
+            }
+
+            alleGemeenten.filter(gemeente => gemeente.toLowerCase().includes(filterText))
+                .forEach(gemeente => {
+                    const option = document.createElement('option');
+                    option.value = gemeente;
+                    option.text = gemeente;
+                    selectElement.appendChild(option);
+                });
+        };
+    });
     
     // SLIDERS EN BUTTONS
     function updatePercentDisplay(idRange, idPercent) {
