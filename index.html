@@ -978,7 +978,7 @@ const searchAddressBtn = document.getElementById('search-address-btn');
 const searchResultsDiv = document.getElementById('search-results');
 const clearSearchBtn = document.getElementById('clear-search-btn');
 
-let searchMarker = null; // To hold the marker for the searched address
+let searchMarker = null; // Variable to hold the marker for the searched address
 
 // Event listeners for the search functionality
 searchAddressBtn.addEventListener('click', performAddressSearch);
@@ -1056,18 +1056,20 @@ function displaySearchResults(results) {
         resultItem.textContent = result.name;
         resultItem.title = 'Click to view on map';
         resultItem.onclick = () => {
+            // Clear previous search marker before adding a new one
             if (searchMarker) {
                 map.removeLayer(searchMarker);
             }
             searchMarker = L.marker(result.latlng).addTo(map)
                 .bindPopup(`<b>${result.name}</b>`).openPopup();
             
+            // Try to fit bounds, if available, otherwise just pan to the point
             if (result.bounds && result.bounds.length === 4) {
                 const southWest = L.latLng(parseFloat(result.bounds[0]), parseFloat(result.bounds[2]));
                 const northEast = L.latLng(parseFloat(result.bounds[1]), parseFloat(result.bounds[3]));
                 map.fitBounds(L.latLngBounds(southWest, northEast), { padding: [50, 50] });
             } else {
-                map.setView(result.latlng, 16);
+                map.setView(result.latlng, 16); // Default zoom level if no bounds
             }
         };
         searchResultsDiv.appendChild(resultItem);
